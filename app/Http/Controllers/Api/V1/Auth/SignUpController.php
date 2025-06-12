@@ -7,6 +7,8 @@ use Illuminate\Http\Request;
 use App\Helpers\ResponseHelper;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Auth;
+
 use App\Models\User;
 
 class SignUpController extends Controller
@@ -32,12 +34,19 @@ class SignUpController extends Controller
             return ResponseHelper::error('Validation error: Kindly fill in all fields', $validator->errors(), 422);
         }
 
+        $emailVerificationCode = random_int(100000, 999999);
+
         $user = User::create([
             'name' => $request->firstName . ' ' . $request->lastName,
             'email' => $request->email,
             'password' => Hash::make($request->password),
             'type' => 'Inactive',
+            'email_verification_code' => $emailVerificationCode,
         ]);
+
+        // Log the user in (sets session cookie)
+        Auth::login($user);
+
 
         return ResponseHelper::success(['user' => $user], "Account created successfully");
     }
