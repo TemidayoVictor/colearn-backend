@@ -2,9 +2,11 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\V1\Auth\SignUpController;
-
-Route::get('/test', [SignUpController::class, 'test']);
+use App\Http\Controllers\Api\V1\Auth\AuthController;
 
 Route::get('/', function () {
     return view('welcome');
 });
+
+Route::post('/login', [AuthController::class, 'login']);
+Route::post('/logout', [AuthController::class, 'logout']);

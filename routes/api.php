@@ -8,5 +8,7 @@ Route::get('/test', [SignUpController::class, 'test']);
 
 Route::prefix('v1')->group(function () {
     Route::post('/createAccount', [SignUpController::class, 'createAccount']);
+
+    Route::post('/login', [AuthController::class, 'login'])->middleware(['web', 'auth:sanctum']);
     Route::post('/logout', [AuthController::class, 'logout'])->middleware(['web', 'auth:sanctum']);
 });
