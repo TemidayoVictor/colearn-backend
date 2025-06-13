@@ -12,6 +12,14 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         //
+        // $middleware->web();
+
+        // $middleware->alias([
+        //     'auth' => \App\Http\Middleware\Authenticate::class,
+        //     'auth:sanctum' => \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
+        // ]);
+
+        $middleware->statefulApi();
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

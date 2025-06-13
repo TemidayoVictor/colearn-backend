@@ -47,7 +47,6 @@ class SignUpController extends Controller
         // Log the user in (sets session cookie)
         Auth::login($user);
 
-
         return ResponseHelper::success(['user' => $user], "Account created successfully");
     }
 }
