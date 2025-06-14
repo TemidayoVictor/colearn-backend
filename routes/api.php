@@ -1,14 +1,16 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Illuminate\Http\Request;
 use App\Http\Controllers\Api\V1\Auth\SignUpController;
 use App\Http\Controllers\Api\V1\Auth\AuthController;
 
-Route::get('/test', [SignUpController::class, 'test']);
-
 Route::prefix('v1')->group(function () {
-    Route::post('/createAccount', [SignUpController::class, 'createAccount']);
 
-    Route::post('/login', [AuthController::class, 'login'])->middleware(['web', 'auth:sanctum']);
-    Route::post('/logout', [AuthController::class, 'logout'])->middleware(['web', 'auth:sanctum']);
+    // route to verify if user is logged in
+    Route::middleware(['auth:sanctum'])->get('/user', function (Request $request) {
+        return $request->user();
+    });
+
+    Route::post('/createAccount', [SignUpController::class, 'createAccount']);
 });
