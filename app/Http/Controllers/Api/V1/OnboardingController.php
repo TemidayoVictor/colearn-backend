@@ -90,7 +90,8 @@ class OnboardingController extends Controller
             if($student) {
                 // update the user type
                 $user->update([
-                    'type' => 'student'
+                    'type' => 'student',
+                    'profile_progress' => '1',
                 ]);
 
                 return ResponseHelper::success('Student Account Created', ['user' => $user, 'student' => $student]);

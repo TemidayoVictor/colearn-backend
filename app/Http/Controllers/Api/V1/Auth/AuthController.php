@@ -8,6 +8,9 @@ use App\Helpers\ResponseHelper;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Auth;
 
+use App\Models\Country;
+use App\Models\Language;
+
 class AuthController extends Controller
 {
     //
@@ -27,7 +30,11 @@ class AuthController extends Controller
             return ResponseHelper::error('Invalid Credentials', [], 401);
         }
 
-        return ResponseHelper::success("Login Successful", ['user' => Auth::user()]);
+        // get all countries
+        $countries = Country::all();
+        $languages = Language::all();
+
+        return ResponseHelper::success("Login Successful", ['user' => Auth::user(), 'countries' => $countries, 'languages' => $languages]);
     }
 
     public function logout(Request $request) {

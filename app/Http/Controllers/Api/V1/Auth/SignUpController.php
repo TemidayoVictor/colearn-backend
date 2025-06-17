@@ -37,7 +37,8 @@ class SignUpController extends Controller
         $emailVerificationCode = random_int(100000, 999999);
 
         $user = User::create([
-            'name' => $request->firstName . ' ' . $request->lastName,
+            'first_name' => $request->firstName,
+            'last_name' => $request->lastName,
             'email' => $request->email,
             'password' => Hash::make($request->password),
             'type' => 'Inactive',
