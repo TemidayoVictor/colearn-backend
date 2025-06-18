@@ -99,6 +99,22 @@ class OnboardingController extends Controller
             }
         }
 
+        elseif($selected == 'instructor') {
+            $student = Student::create([
+                'user_id' => $request->userId
+            ]);
+
+            if($student) {
+                // update the user type
+                $user->update([
+                    'type' => 'student',
+                    'profile_progress' => '1',
+                ]);
+
+                return ResponseHelper::success('Student Account Created', ['user' => $user, 'student' => $student]);
+            }
+        }
+
     }
 
     public function submitStudentDetails(Request $request) {
