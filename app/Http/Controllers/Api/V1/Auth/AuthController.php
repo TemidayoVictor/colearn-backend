@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Auth;
 use App\Models\Country;
 use App\Models\Language;
 use App\Models\Preferences;
+use App\Models\Category;
 
 class AuthController extends Controller
 {
@@ -35,8 +36,16 @@ class AuthController extends Controller
         $countries = Country::all();
         $languages = Language::all();
         $preferences = Preferences::all();
+        $categories = Category::all();
 
-        return ResponseHelper::success("Login Successful", ['user' => Auth::user(), 'countries' => $countries, 'languages' => $languages, 'preferences' => $preferences]);
+        return ResponseHelper::success("Login Successful",
+        [
+            'user' => Auth::user(),
+            'countries' => $countries,
+            'languages' => $languages,
+            'preferences' => $preferences,
+            'categories' => $categories,
+        ]);
     }
 
     public function logout(Request $request) {

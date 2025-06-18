@@ -10,6 +10,10 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
 
 use App\Models\User;
+use App\Models\Country;
+use App\Models\Language;
+use App\Models\Preferences;
+use App\Models\Category;
 
 class SignUpController extends Controller
 {
@@ -48,6 +52,20 @@ class SignUpController extends Controller
         // Log the user in (sets session cookie)
         Auth::login($user);
 
-        return ResponseHelper::success("Account created successfully", ['user' => $user]);
+        // get all countries
+        $countries = Country::all();
+        $languages = Language::all();
+        $preferences = Preferences::all();
+        $categories = Category::all();
+
+        return ResponseHelper::success("Account created successfully",
+        [
+            'user' => $user,
+            'countries' => $countries,
+            'languages' => $languages,
+            'preferences' => $preferences,
+            'categories' => $categories,
+
+        ]);
     }
 }
