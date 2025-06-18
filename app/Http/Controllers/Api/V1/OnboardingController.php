@@ -85,42 +85,56 @@ class OnboardingController extends Controller
         $selected = $request->selected;
 
         if($selected == 'student') {
-            $student = Student::create([
-                'user_id' => $request->userId
-            ]);
+            // check
+            $check = Student::where('user_id', $request->userId)->first();
 
-            if($student) {
-                // update the user type
-                $user->update([
-                    'type' => 'student',
-                    'profile_progress' => '1',
+            if(!$check) {
+                $student = Student::create([
+                    'user_id' => $request->userId
                 ]);
 
-                return ResponseHelper::success('Student Account Created', ['user' => $user, 'student' => $student]);
+                if($student) {
+                    // update the user type
+                    $user->update([
+                        'type' => 'student',
+                        'profile_progress' => '1',
+                    ]);
+
+                    return ResponseHelper::success('Student Account Created', ['user' => $user, 'student' => $student]);
+                }
             }
+
+            return ResponseHelper::error('Existing User', [], 422);
         }
 
         elseif($selected == 'instructor') {
-            $instructor = Instructor::create([
-                'user_id' => $request->userId
-            ]);
+            // check
+            $check = Instructor::where('user_id', $request->userId)->first();
 
-            if($instructor) {
-                // update the user type
-                $user->update([
-                    'type' => 'instructor',
-                    'profile_progress' => '1',
+            if(!$check) {
+                $instructor = Instructor::create([
+                    'user_id' => $request->userId
                 ]);
 
-                return ResponseHelper::success('Instructor Account Created', ['user' => $user, 'instructor' => $instructor]);
+                if($instructor) {
+                    // update the user type
+                    $user->update([
+                        'type' => 'instructor',
+                        'profile_progress' => '1',
+                    ]);
+
+                    return ResponseHelper::success('Instructor Account Created', ['user' => $user, 'instructor' => $instructor]);
+                }
             }
+
+            return ResponseHelper::error('Existing User', [], 422);
         }
 
         return ResponseHelper::error('Invalid account type', [], 404);
 
     }
 
-    public function submitStudentDetails(Request $request) {
+    public function submitDetails(Request $request) {
         $validator = Validator::make($request->all(), [
             'profile_photo' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
             'gender' => 'required|string|in:Male,Female,Other',
@@ -137,24 +151,31 @@ class OnboardingController extends Controller
         }
 
         $user = ModelHelper::findOrFailWithCustomResponse(User::class, $request->userId, 'User not found', 'userId');
+        $userTypeFetch = $user->type;
 
-        $student = $user->student;
+        if($userTypeFetch == 'student') {
+            $userType = $user->student;
+        }
 
-        if (!$student) {
-            return ResponseHelper::error('Student profile not found');
+        elseif($userTypeFetch == 'instructor') {
+            $userType = $user->instructor;
+        }
+
+        if (!$userType) {
+            return ResponseHelper::error('Profile not found');
         }
 
         // update details in student table
         if ($request->hasFile('profile_photo')) {
             $path = $request->file('profile_photo')->store('uploads/profile_photos', 'public');
-            $student->profile_photo = $path;
+            $userType->profile_photo = $path;
         }
 
-        $student->gender = $request->gender;
-        $student->languages = $request->languages;
-        $student->country = $request->country;
-        $student->phone = $request->phone;
-        $student->save();
+        $userType->gender = $request->gender;
+        $userType->languages = $request->languages;
+        $userType->country = $request->country;
+        $userType->phone = $request->phone;
+        $userType->save();
 
         // update user progress
         $user->profile_progress = '2';
