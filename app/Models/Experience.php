@@ -8,4 +8,19 @@ class Experience extends Model
 {
     //
     protected $table = "experiences";
+
+    protected $fillable = [
+        'instructor_id',
+        'title',
+        'organization',
+        'description',
+        'start_date',
+        'end_date',
+        'is_current',
+    ];
+
+    public function instructor()
+    {
+        return $this->belongsTo(Instructor::class);
+    }
 }

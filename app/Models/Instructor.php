@@ -27,4 +27,14 @@ class Instructor extends Model
         'disciplines',
         'languages',
     ];
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    public function experience()
+    {
+        return $this->hasMany(Experience::class);
+    }
 }

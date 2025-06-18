@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Log;
 
 use App\Models\User;
 use App\Models\Student;
+use App\Models\Instructor;
 
 class OnboardingController extends Controller
 {
@@ -100,20 +101,22 @@ class OnboardingController extends Controller
         }
 
         elseif($selected == 'instructor') {
-            $student = Student::create([
+            $instructor = Instructor::create([
                 'user_id' => $request->userId
             ]);
 
-            if($student) {
+            if($instructor) {
                 // update the user type
                 $user->update([
-                    'type' => 'student',
+                    'type' => 'instructor',
                     'profile_progress' => '1',
                 ]);
 
-                return ResponseHelper::success('Student Account Created', ['user' => $user, 'student' => $student]);
+                return ResponseHelper::success('Instructor Account Created', ['user' => $user, 'instructor' => $instructor]);
             }
         }
+
+        return ResponseHelper::error('Invalid account type', [], 404);
 
     }
 
