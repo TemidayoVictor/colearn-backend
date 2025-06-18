@@ -16,6 +16,9 @@ Route::prefix('v1')->group(function () {
         Route::post('/verify-otp-onboarding', [OnboardingController::class, 'verifyOtp']);
         Route::post('/resend-otp-onboarding', [OnboardingController::class, 'resendOtp']);
         Route::post('/select-account', [OnboardingController::class, 'selectAccount']);
+
+        Route::post('/submit-student-details', [OnboardingController::class, 'submitStudentDetails']);
+        Route::post('/add-preferences', [OnboardingController::class, 'addPreferences']);
     });
 
     // Utilities

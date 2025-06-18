@@ -8,6 +8,7 @@ use App\Helpers\ResponseHelper;
 use App\Helpers\ModelHelper;
 use Illuminate\Support\Facades\Validator;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Log;
 
 use App\Models\User;
 use App\Models\Student;
@@ -98,5 +99,73 @@ class OnboardingController extends Controller
             }
         }
 
+    }
+
+    public function submitStudentDetails(Request $request) {
+        $validator = Validator::make($request->all(), [
+            'profile_photo' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+            'gender' => 'required|string|in:Male,Female,Other',
+            'country' => 'required|string',
+            'phone' => 'required|string',
+            'languages' => 'required|array',
+            'languages.*' => 'string',
+            'userId' => 'required|integer|exists:users,id',
+        ]);
+
+        if ($validator->fails()) {
+            $firstError = $validator->errors()->first();
+            return ResponseHelper::error($firstError, $validator->errors(), 422);
+        }
+
+        $user = ModelHelper::findOrFailWithCustomResponse(User::class, $request->userId, 'User not found', 'userId');
+
+        $student = $user->student;
+
+        if (!$student) {
+            return ResponseHelper::error('Student profile not found');
+        }
+
+        // update details in student table
+        if ($request->hasFile('profile_photo')) {
+            $path = $request->file('profile_photo')->store('uploads/profile_photos', 'public');
+            $student->profile_photo = $path;
+        }
+
+        $student->gender = $request->gender;
+        $student->languages = $request->languages;
+        $student->country = $request->country;
+        $student->phone = $request->phone;
+        $student->save();
+
+        // update user progress
+        $user->profile_progress = '2';
+        $user->country_phone_code = $request->country_phone_code;
+        $user->country_iso = $request->country_iso;
+        $user->country_iso3 = $request->country_iso3;
+        $user->save();
+
+        return ResponseHelper::success('Details Updated Successfully', ['user' => $user, 'student' => $student]);
+
+    }
+
+    public function addPreferences(Request $request) {
+        $validator = Validator::make($request->all(), [
+            'preferences' => 'nullable|array',
+            'preferences.*' => 'string',
+            'userId' => 'required|integer|exists:users,id',
+        ]);
+
+        if ($validator->fails()) {
+            $firstError = $validator->errors()->first();
+            return ResponseHelper::error($firstError, $validator->errors(), 422);
+        }
+
+        $user = ModelHelper::findOrFailWithCustomResponse(User::class, $request->userId, 'User not found', 'userId');
+
+        $user->preferences = $request->preferences;
+        $user->profile_progress = 'completed';
+        $user->save();
+
+        return ResponseHelper::success('Details Updated Successfully', ['user' => $user]);
     }
 }

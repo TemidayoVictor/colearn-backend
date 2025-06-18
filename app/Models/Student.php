@@ -15,6 +15,7 @@ class Student extends Model
         'country',
         'gender',
         'is_active',
+        'languages',
     ];
 
     public function user()

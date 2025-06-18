@@ -27,6 +27,10 @@ class User extends Authenticatable
         'email_verification_code',
         'email_verified_at',
         'profile_progress',
+        'country_phone_code',
+        'country_iso',
+        'country_iso3',
+        'preferences',
     ];
 
     /**
