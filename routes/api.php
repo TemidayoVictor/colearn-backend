@@ -19,6 +19,9 @@ Route::prefix('v1')->group(function () {
 
         Route::post('/submit-details', [OnboardingController::class, 'submitDetails']);
         Route::post('/add-preferences', [OnboardingController::class, 'addPreferences']);
+
+        Route::post('/submit-professional-details', [OnboardingController::class, 'submitProfessionalDetails']);
+        Route::post('/submit-experiences', [OnboardingController::class, 'submitExperiences']);
     });
 
     // Utilities

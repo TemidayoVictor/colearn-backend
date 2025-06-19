@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Log;
 use App\Models\User;
 use App\Models\Student;
 use App\Models\Instructor;
+use App\Models\Experience;
 
 class OnboardingController extends Controller
 {
@@ -184,7 +185,7 @@ class OnboardingController extends Controller
         $user->country_iso3 = $request->country_iso3;
         $user->save();
 
-        return ResponseHelper::success('Details Updated Successfully', ['user' => $user, 'student' => $student]);
+        return ResponseHelper::success('Details Updated Successfully', ['user' => $user, $userTypeFetch => $userType]);
 
     }
 
@@ -207,5 +208,83 @@ class OnboardingController extends Controller
         $user->save();
 
         return ResponseHelper::success('Details Updated Successfully', ['user' => $user]);
+    }
+
+    public function submitProfessionalDetails(Request $request) {
+        $validator = Validator::make($request->all(), [
+            'title' => 'required|string',
+            'headline' => 'required|string',
+            'category' => 'required|string',
+            'userId' => 'required|integer|exists:users,id',
+        ]);
+
+        if ($validator->fails()) {
+            $firstError = $validator->errors()->first();
+            return ResponseHelper::error($firstError, $validator->errors(), 422);
+        }
+
+        $user = ModelHelper::findOrFailWithCustomResponse(User::class, $request->userId, 'User not found', 'userId');
+        $userTypeFetch = $user->type;
+
+        if($userTypeFetch != "instructor") {
+            return ResponseHelper::error('Profile not found');
+        }
+
+        $userType = $user->instructor;
+
+        $userType->title = $request->title;
+        $userType->professional_headline = $request->headline;
+        $userType->category = $request->category;
+        $userType->save();
+
+        $user->profile_progress = '3';
+        $user->save();
+
+        return ResponseHelper::success('Details Updated Successfully', ['user' => $user, $userTypeFetch => $userType]);
+
+    }
+
+    public function submitExperiences(Request $request) {
+        $validator = Validator::make($request->all(), [
+            'userId' => 'required|exists:users,id',
+            'experiences' => 'required|array',
+            'experiences.*.title' => 'required|string|max:255',
+            'experiences.*.organization' => 'required|string|max:255',
+            'experiences.*.description' => 'nullable|string',
+            'experiences.*.start_date' => 'required|date',
+            'experiences.*.end_date' => 'nullable|date',
+            'experiences.*.currently_working' => 'required|boolean',
+        ]);
+
+        if ($validator->fails()) {
+            $firstError = $validator->errors()->first();
+            return ResponseHelper::error($firstError, $validator->errors(), 422);
+        }
+
+        $user = ModelHelper::findOrFailWithCustomResponse(User::class, $request->userId, 'User not found', 'userId');
+        $userTypeFetch = $user->type;
+
+        if($userTypeFetch != "instructor") {
+            return ResponseHelper::error('Profile not found');
+        }
+
+        $userType = $user->instructor;
+
+        foreach ($request->experiences as $exp) {
+            Experience::create([
+                'instructor_id' => $userType->id,
+                'title' => $exp['title'],
+                'organization' => $exp['organization'],
+                'description' => $exp['description'],
+                'start_date' => $exp['start_date'],
+                'end_date' => $exp['currently_working'] ? null : $exp['end_date'],
+                'currently_working' => $exp['currently_working'],
+            ]);
+        }
+
+        $user->profile_progress = '4';
+        $user->save();
+
+        return ResponseHelper::success('Details Updated Successfully', ['user' => $user, $userTypeFetch => $userType]);
     }
 }

@@ -26,6 +26,7 @@ class Instructor extends Model
         'is_active',
         'disciplines',
         'languages',
+        'category',
     ];
 
     public function user()
