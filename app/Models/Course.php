@@ -12,9 +12,10 @@ class Course extends Model
         'instructor_id',
         'title',
         'description',
-        'waht_to_learn',
+        'who_can_enroll',
         'thumbnail',
         'is_published',
         'price',
+        'is_free',
     ];
 }

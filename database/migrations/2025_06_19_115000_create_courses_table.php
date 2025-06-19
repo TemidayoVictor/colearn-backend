@@ -16,10 +16,11 @@ return new class extends Migration
             $table->foreignId('instructor_id')->constrained()->onDelete('cascade');
             $table->string('title');
             $table->text('description');
-            $table->text('waht_to_learn');
+            $table->text('who_can_enroll');
             $table->string('thumbnail')->nullable();
             $table->boolean('is_published')->default(false);
-            $table->string('price')->nullable();
+            $table->integer('price')->nullable();
+            $table->boolean('is_free')->default(false);
             $table->timestamps();
         });
     }
