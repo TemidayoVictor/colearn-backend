@@ -202,6 +202,15 @@ class OnboardingController extends Controller
         }
 
         $user = ModelHelper::findOrFailWithCustomResponse(User::class, $request->userId, 'User not found', 'userId');
+        $userTypeFetch = $user->type;
+
+        if($userTypeFetch == "instructor") {
+            $userType = $user->instructor;
+            $userType->disciplines = $request->preferences;
+            $user->profile_progress = 'completed';
+            $user->save();
+            return ResponseHelper::success('Details Updated Successfully', ['user' => $user]);
+        }
 
         $user->preferences = $request->preferences;
         $user->profile_progress = 'completed';
@@ -215,6 +224,7 @@ class OnboardingController extends Controller
             'title' => 'required|string',
             'headline' => 'required|string',
             'category' => 'required|string',
+            'bio' => 'required|string',
             'userId' => 'required|integer|exists:users,id',
         ]);
 
@@ -235,6 +245,11 @@ class OnboardingController extends Controller
         $userType->title = $request->title;
         $userType->professional_headline = $request->headline;
         $userType->category = $request->category;
+        $userType->bio = $request->bio;
+        $userType->linkedin_url = $request->linkedin;
+        $userType->youtube_url = $request->youtube;
+        $userType->twitter_url = $request->twitter;
+        $userType->website = $request->website;
         $userType->save();
 
         $user->profile_progress = '3';
