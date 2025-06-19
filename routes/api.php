@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\V1\Auth\SignUpController;
 use App\Http\Controllers\Api\V1\Auth\AuthController;
 use App\Http\Controllers\Api\V1\OnboardingController;
 use App\Http\Controllers\Api\V1\UtilitiesController;
+use App\Http\Controllers\Api\V1\CourseController;
 
 Route::prefix('v1')->group(function () {
     // Sign up
@@ -22,6 +23,10 @@ Route::prefix('v1')->group(function () {
 
         Route::post('/submit-professional-details', [OnboardingController::class, 'submitProfessionalDetails']);
         Route::post('/submit-experiences', [OnboardingController::class, 'submitExperiences']);
+
+        // Instructor Authenticated Route
+        Route::post('/upload-course', [CourseController::class, 'uploadCourse']);
+
     });
 
     // Utilities
