@@ -11,6 +11,7 @@ class CoursesSection extends Model
     protected $fillable = [
         'course_id',
         'title',
+        'description',
         'order',
     ];
 }
