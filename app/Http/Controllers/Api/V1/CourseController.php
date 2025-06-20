@@ -12,19 +12,19 @@ use Illuminate\Support\Facades\Log;
 use App\Models\User;
 use App\Models\Course;
 use App\Models\CourseCategory;
+use App\Models\Instructor;
 use App\Models\Category;
 
 class CourseController extends Controller
 {
     //
     public function uploadCourse(Request $request) {
-        Log::info($request);
         $validator = Validator::make($request->all(), [
             'userId' => 'required|exists:users,id',
             'title' => 'required|string',
             'description' => 'required|string',
             'who_can_enroll' => 'required|string',
-            'price' => 'required|integer',
+            'price' => 'nullable|integer',
             'is_free' => 'string',
             'categories' => 'required|array',
             'categories.*' => 'string',
@@ -67,6 +67,36 @@ class CourseController extends Controller
             ]);
         }
 
-        return ResponseHelper::success('Course created successfully');
+        return ResponseHelper::success('Course created successfully', ['course' => $course]);
+    }
+
+    public function allCourses(Request $request) {
+        $validator = Validator::make($request->all(), [
+            'instructorId' => 'required|exists:instructors,id',
+        ]);
+
+        if ($validator->fails()) {
+            $firstError = $validator->errors()->first();
+            return ResponseHelper::error($firstError, $validator->errors(), 422);
+        }
+
+        $instructor = ModelHelper::findOrFailWithCustomResponse(Instructor::class, $request->instructorId, 'Instructor not found', 'instructorId');
+
+        $courses = Course::where('instructor_id', $request->instructorId)->get();
+        return ResponseHelper::success('Courses fetched successfully', ['courses' => $courses]);
+    }
+
+    public function getCourse(Request $request) {
+        $validator = Validator::make($request->all(), [
+            'courseId' => 'required|string',
+        ]);
+
+        if ($validator->fails()) {
+            $firstError = $validator->errors()->first();
+            return ResponseHelper::error($firstError, $validator->errors(), 422);
+        }
+
+        $course = ModelHelper::findOrFailWithCustomResponse(Course::class, $request->courseId, 'Course not found', 'courseId');
+        return ResponseHelper::success('Course fetched successfully', ['course' => $course]);
     }
 }

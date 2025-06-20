@@ -25,8 +25,11 @@ Route::prefix('v1')->group(function () {
         Route::post('/submit-experiences', [OnboardingController::class, 'submitExperiences']);
 
         // Instructor Authenticated Route
-        Route::post('/upload-course', [CourseController::class, 'uploadCourse']);
 
+        // Courses
+        Route::post('/upload-course', [CourseController::class, 'uploadCourse']);
+        Route::post('/all-courses', [CourseController::class, 'allCourses']);
+        Route::post('/get-course-details', [CourseController::class, 'getCourse']);
     });
 
     // Utilities
