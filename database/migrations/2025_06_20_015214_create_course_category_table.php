@@ -11,14 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('course_resources', function (Blueprint $table) {
+        Schema::create('course_category', function (Blueprint $table) {
             $table->id();
             $table->foreignId('course_id')->constrained()->onDelete('cascade');
-            $table->string('title');
-            $table->enum('type', ['document', 'article', 'link']);
-            $table->text('file_path')->nullable();  // For document
-            $table->text('content')->nullable();    // For article
-            $table->string('external_url')->nullable(); // For links
+            $table->foreignId('category_id');
             $table->timestamps();
         });
     }
@@ -28,6 +24,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('course_resources');
+        Schema::dropIfExists('course_category');
     }
 };
