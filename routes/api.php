@@ -33,7 +33,7 @@ Route::prefix('v1')->group(function () {
 
         // Modules
         Route::post('/upload-module', [CourseController::class, 'addModules']);
-        Route::post('/all-modules', [CourseController::class, 'allModules']);
+        Route::post('/all-course-modules', [CourseController::class, 'allCourseModules']);
         Route::post('/get-module', [CourseController::class, 'getModule']);
     });
 

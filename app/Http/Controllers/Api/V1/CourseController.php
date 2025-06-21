@@ -180,7 +180,7 @@ class CourseController extends Controller
         return ResponseHelper::success('Module Updated successfully', ['module' => $module]);
     }
 
-    public function allModules(Request $request) {
+    public function allCourseModules(Request $request) {
         $validator = Validator::make($request->all(), [
             'courseId' => 'required|exists:courses,id',
         ]);
@@ -193,7 +193,7 @@ class CourseController extends Controller
         $course = ModelHelper::findOrFailWithCustomResponse(Course::class, $request->courseId, 'Course not found', 'courseId');
 
         $modules = CoursesSection::where('course_id', $request->courseId)->get();
-        return ResponseHelper::success('Courses fetched successfully', ['modules' => $modules]);
+        return ResponseHelper::success('Courses fetched successfully', ['course' => $course, 'modules' => $modules]);
     }
 
     public function getModule(Request $request) {

@@ -13,5 +13,6 @@ class CoursesSection extends Model
         'title',
         'description',
         'order',
+        'videos',
     ];
 }
