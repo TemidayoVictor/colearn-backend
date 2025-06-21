@@ -10,6 +10,8 @@ class CoursesResource extends Model
 
     protected $fillable = [
         'course_id',
+        'course_section_id',
+        'course_video_id',
         'title',
         'type',
         'file_path',

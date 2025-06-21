@@ -35,6 +35,10 @@ Route::prefix('v1')->group(function () {
         Route::post('/upload-module', [CourseController::class, 'addModules']);
         Route::post('/all-course-modules', [CourseController::class, 'allCourseModules']);
         Route::post('/get-module', [CourseController::class, 'getModule']);
+
+        // Videos
+        Route::post('/upload-video', [CourseController::class, 'uploadVideo']);
+        Route::post('/get-module-videos', [CourseController::class, 'getAllModuleVideos']);
     });
 
     // Utilities

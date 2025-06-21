@@ -17,5 +17,6 @@ class Course extends Model
         'is_published',
         'price',
         'is_free',
+        'videos',
     ];
 }

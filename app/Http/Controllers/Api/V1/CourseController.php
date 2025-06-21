@@ -13,6 +13,8 @@ use App\Models\User;
 use App\Models\Course;
 use App\Models\CoursesSection;
 use App\Models\CourseCategory;
+use App\Models\CoursesVideo;
+use App\Models\CoursesResource;
 use App\Models\Instructor;
 use App\Models\Category;
 
@@ -208,5 +210,73 @@ class CourseController extends Controller
 
         $module = ModelHelper::findOrFailWithCustomResponse(CoursesSection::class, $request->moduleId, 'Module not found', 'moduleId');
         return ResponseHelper::success('Module fetched successfully', ['module' => $module]);
+    }
+
+    public function uploadVideo(Request $request) {
+        $validator = Validator::make($request->all(), [
+            'moduleId' => 'required|string',
+            'title' => 'required|string',
+            'video' => 'required|file|mimes:mp4,mov,avi,webm,mkv|max:512000', // 500MB max
+            'duration' => 'required',
+        ]);
+
+        if ($validator->fails()) {
+            $firstError = $validator->errors()->first();
+            return ResponseHelper::error($firstError, $validator->errors(), 422);
+        }
+
+        $module = ModelHelper::findOrFailWithCustomResponse(CoursesSection::class, $request->moduleId, 'Module not found', 'moduleId');
+        // get the number of all the videos in that module to get order
+        $videosCount = CoursesVideo::where('course_section_id', $request->moduleId)->count();
+        $order = $videosCount + 1;
+
+        // store video
+        $path = null;
+        if ($request->hasFile('video')) {
+            $path = $request->file('video')->store('uploads/lesson_videos', 'public');
+        }
+
+        // store details in table
+        $video = CoursesVideo::create([
+            'course_section_id' => $request->moduleId,
+            'title' => $request->title,
+            'video_url' => $path,
+            'duration' => $request->duration,
+            'order' => $order,
+        ]);
+
+        return ResponseHelper::success('Video Uploaded successfully', ['video' => $video]);
+
+    }
+
+    public function getAllModuleVideos(Request $request) {
+        $validator = Validator::make($request->all(), [
+            'moduleId' => 'required|exists:course_sections,id',
+        ]);
+
+        if ($validator->fails()) {
+            $firstError = $validator->errors()->first();
+            return ResponseHelper::error($firstError, $validator->errors(), 422);
+        }
+
+        $module = ModelHelper::findOrFailWithCustomResponse(CoursesSection::class, $request->moduleId, 'Module not found', 'moduleId');
+
+        $videos = CoursesVideo::where('course_section_id', $request->moduleId)->get();
+        return ResponseHelper::success('Videos fetched successfully', ['module' => $module, 'videos' => $videos]);
+    }
+
+    public function uploadResource(Request $request) {
+        $validator = Validator::make($request->all(), [
+            'courseId' => 'required|exists:courses,id',
+            'videoId' => 'required|exists:course_videos,id',
+            'title' => 'required',
+            'type' => 'required',
+            'category' => 'required',
+        ]);
+
+        if ($validator->fails()) {
+            $firstError = $validator->errors()->first();
+            return ResponseHelper::error($firstError, $validator->errors(), 422);
+        }
     }
 }
