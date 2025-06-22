@@ -19,4 +19,20 @@ class CoursesResource extends Model
         'is_published',
         'external_url',
     ];
+
+    public function course()
+    {
+        return $this->belongsTo(Course::class);
+    }
+
+    public function module()
+    {
+        return $this->belongsTo(CoursesSection::class);
+    }
+
+    public function video()
+    {
+        return $this->belongsTo(CoursesVideo::class);
+    }
+
 }

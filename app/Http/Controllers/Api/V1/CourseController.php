@@ -193,9 +193,9 @@ class CourseController extends Controller
         }
 
         $course = ModelHelper::findOrFailWithCustomResponse(Course::class, $request->courseId, 'Course not found', 'courseId');
-
-        $modules = CoursesSection::where('course_id', $request->courseId)->get();
-        return ResponseHelper::success('Courses fetched successfully', ['course' => $course, 'modules' => $modules]);
+        // $modules = CoursesSection::where('course_id', $request->courseId)->get();
+        $courseUse = $course->with('modules.videos', 'resources');
+        return ResponseHelper::success('Data fetched successfully', ['course' => $courseUse]);
     }
 
     public function getModule(Request $request) {

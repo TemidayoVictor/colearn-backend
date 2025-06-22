@@ -15,4 +15,14 @@ class CoursesVideo extends Model
         'duration',
         'order',
     ];
+
+    public function module()
+    {
+        return $this->belongsTo(CoursesSection::class);
+    }
+
+    public function resources()
+    {
+        return $this->hasMany(CoursesResource::class);
+    }
 }

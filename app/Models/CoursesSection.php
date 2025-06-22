@@ -15,4 +15,19 @@ class CoursesSection extends Model
         'order',
         'videos',
     ];
+
+    public function course()
+    {
+        return $this->belongsTo(Course::class);
+    }
+
+    public function videos()
+    {
+        return $this->hasMany(CoursesVideo::class);
+    }
+
+    public function resources()
+    {
+        return $this->hasMany(CoursesResource::class);
+    }
 }

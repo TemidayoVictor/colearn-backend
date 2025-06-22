@@ -19,4 +19,14 @@ class Course extends Model
         'is_free',
         'videos',
     ];
+
+    public function modules()
+    {
+        return $this->hasMany(CoursesSection::class);
+    }
+
+    public function resources()
+    {
+        return $this->hasMany(CoursesResource::class);
+    }
 }
