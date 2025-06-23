@@ -91,7 +91,7 @@ class CourseController extends Controller
 
     public function getCourse(Request $request) {
         $validator = Validator::make($request->all(), [
-            'courseId' => 'required|string',
+            'courseId' => 'required|exists:courses,id',
         ]);
 
         if ($validator->fails()) {
@@ -100,7 +100,9 @@ class CourseController extends Controller
         }
 
         $course = ModelHelper::findOrFailWithCustomResponse(Course::class, $request->courseId, 'Course not found', 'courseId');
-        return ResponseHelper::success('Course fetched successfully', ['course' => $course]);
+        // $modules = CoursesSection::where('course_id', $request->courseId)->get();
+        $courseUse = $course->with('modules.videos', 'resources')->where('id', $request->courseId)->first();
+        return ResponseHelper::success('Data fetched successfully', ['course' => $courseUse]);
     }
 
     public function addModules(Request $request) {
@@ -182,22 +184,6 @@ class CourseController extends Controller
         return ResponseHelper::success('Module Updated successfully', ['module' => $module]);
     }
 
-    public function allCourseModules(Request $request) {
-        $validator = Validator::make($request->all(), [
-            'courseId' => 'required|exists:courses,id',
-        ]);
-
-        if ($validator->fails()) {
-            $firstError = $validator->errors()->first();
-            return ResponseHelper::error($firstError, $validator->errors(), 422);
-        }
-
-        $course = ModelHelper::findOrFailWithCustomResponse(Course::class, $request->courseId, 'Course not found', 'courseId');
-        // $modules = CoursesSection::where('course_id', $request->courseId)->get();
-        $courseUse = $course->with('modules.videos', 'resources');
-        return ResponseHelper::success('Data fetched successfully', ['course' => $courseUse]);
-    }
-
     public function getModule(Request $request) {
         $validator = Validator::make($request->all(), [
             'moduleId' => 'required|string',
@@ -209,7 +195,8 @@ class CourseController extends Controller
         }
 
         $module = ModelHelper::findOrFailWithCustomResponse(CoursesSection::class, $request->moduleId, 'Module not found', 'moduleId');
-        return ResponseHelper::success('Module fetched successfully', ['module' => $module]);
+        $moduleUse = $module->with('videos', 'resources')->where('id', $request->moduleId)->first();
+        return ResponseHelper::success('Module fetched successfully', ['module' => $moduleUse]);
     }
 
     public function uploadVideo(Request $request) {
@@ -267,16 +254,53 @@ class CourseController extends Controller
 
     public function uploadResource(Request $request) {
         $validator = Validator::make($request->all(), [
-            'courseId' => 'required|exists:courses,id',
-            'videoId' => 'required|exists:course_videos,id',
             'title' => 'required',
             'type' => 'required',
             'category' => 'required',
+            'courseId' => 'required|exists:courses,id',
+            'videoId' => 'nullable|exists:course_videos,id',
+            'moduleId' => 'nullable|exists:course_sections,id',
+            'document' => 'nullable|file|mimes:docs,pdf,txt,pptx,xlsx,csv,zip,rar|max:5200', // max 5MB
+            'url' => 'nullable',
         ]);
 
         if ($validator->fails()) {
             $firstError = $validator->errors()->first();
             return ResponseHelper::error($firstError, $validator->errors(), 422);
         }
+
+        $type = $request->type;
+        $document = $request->document;
+        $url = $request->url;
+        $path = null;
+
+        if($type == 'document' && $document == null) {
+            return ResponseHelper::error('No document found');
+        }
+
+        elseif($type == 'link' && $url == null) {
+            return ResponseHelper::error('No URL found');
+        }
+
+        if($type == 'document' && $document != null) {
+            // store document
+            if ($request->hasFile('document')) {
+                $path = $request->file('document')->store('uploads/resources', 'public');
+            }
+        }
+
+        $resource = CoursesResource::create([
+            'course_id' => $request->courseId,
+            'course_section_id' => $request->moduleId,
+            'course_video_id' => $request->videoId,
+            'title' => $request->title,
+            'type' => $request->type,
+            'category' => $request->category,
+            'file_path' => $path,
+            'content' => null,
+            'external_url' => $url,
+        ]);
+
+        return ResponseHelper::success('Resource added successfully');
     }
 }

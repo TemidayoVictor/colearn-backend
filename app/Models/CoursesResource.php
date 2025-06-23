@@ -14,9 +14,9 @@ class CoursesResource extends Model
         'course_video_id',
         'title',
         'type',
+        'category',
         'file_path',
         'content',
-        'is_published',
         'external_url',
     ];
 
@@ -27,12 +27,12 @@ class CoursesResource extends Model
 
     public function module()
     {
-        return $this->belongsTo(CoursesSection::class);
+        return $this->belongsTo(CoursesSection::class, 'course_section_id');
     }
 
     public function video()
     {
-        return $this->belongsTo(CoursesVideo::class);
+        return $this->belongsTo(CoursesVideo::class,'course_video_id');
     }
 
 }

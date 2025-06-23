@@ -18,11 +18,11 @@ class CoursesVideo extends Model
 
     public function module()
     {
-        return $this->belongsTo(CoursesSection::class);
+        return $this->belongsTo(CoursesSection::class, 'course_section_id');
     }
 
     public function resources()
     {
-        return $this->hasMany(CoursesResource::class);
+        return $this->hasMany(CoursesResource::class, 'course_video_id');
     }
 }

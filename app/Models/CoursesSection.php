@@ -23,11 +23,11 @@ class CoursesSection extends Model
 
     public function videos()
     {
-        return $this->hasMany(CoursesVideo::class);
+        return $this->hasMany(CoursesVideo::class, 'course_section_id');
     }
 
     public function resources()
     {
-        return $this->hasMany(CoursesResource::class);
+        return $this->hasMany(CoursesResource::class, 'course_section_id');
     }
 }
