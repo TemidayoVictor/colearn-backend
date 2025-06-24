@@ -22,7 +22,7 @@ class OnboardingController extends Controller
 
         $validator = Validator::make($request->all(), [
             'otp' => 'required',
-            'userId' => 'required',
+            'userId' => 'required|exists:users,id',
         ]);
 
         if ($validator->fails()) {
@@ -30,7 +30,7 @@ class OnboardingController extends Controller
             return ResponseHelper::error($firstError, $validator->errors(), 422);
         }
 
-        $user = ModelHelper::findOrFailWithCustomResponse(User::class, $request->userId, 'User not found', 'userId');
+        $user = User::where('id', $request->userId)->first();
 
         if($user->email_verification_code === $request->otp) {
             // update email_verified_at
@@ -49,7 +49,7 @@ class OnboardingController extends Controller
 
     public function resendOtp(Request $request) {
         $validator = Validator::make($request->all(), [
-            'userId' => 'required',
+            'userId' => 'required|exists:users,id',
         ]);
 
         if ($validator->fails()) {
@@ -57,7 +57,7 @@ class OnboardingController extends Controller
             return ResponseHelper::error($firstError, $validator->errors(), 422);
         }
 
-        $user = ModelHelper::findOrFailWithCustomResponse(User::class, $request->userId, 'User not found', 'userId');
+        $user = User::where('id', $request->userId)->first();
 
         // generate and update new email verification code
         $emailVerificationCode = random_int(100000, 999999);
@@ -72,7 +72,7 @@ class OnboardingController extends Controller
 
     public function selectAccount(Request $request) {
         $validator = Validator::make($request->all(), [
-            'userId' => 'required',
+            'userId' => 'required|exists:users,id',
             'selected' => 'required',
         ]);
 
@@ -81,7 +81,7 @@ class OnboardingController extends Controller
             return ResponseHelper::error($firstError, $validator->errors(), 422);
         }
 
-        $user = ModelHelper::findOrFailWithCustomResponse(User::class, $request->userId, 'User not found', 'userId');
+        $user = User::where('id', $request->userId)->first();
 
         $selected = $request->selected;
 
@@ -151,7 +151,7 @@ class OnboardingController extends Controller
             return ResponseHelper::error($firstError, $validator->errors(), 422);
         }
 
-        $user = ModelHelper::findOrFailWithCustomResponse(User::class, $request->userId, 'User not found', 'userId');
+        $user = User::where('id', $request->userId)->first();
         $userTypeFetch = $user->type;
 
         if($userTypeFetch == 'student') {
@@ -201,7 +201,7 @@ class OnboardingController extends Controller
             return ResponseHelper::error($firstError, $validator->errors(), 422);
         }
 
-        $user = ModelHelper::findOrFailWithCustomResponse(User::class, $request->userId, 'User not found', 'userId');
+        $user = User::where('id', $request->userId)->first();
         $userTypeFetch = $user->type;
 
         if($userTypeFetch == "instructor") {
@@ -233,7 +233,7 @@ class OnboardingController extends Controller
             return ResponseHelper::error($firstError, $validator->errors(), 422);
         }
 
-        $user = ModelHelper::findOrFailWithCustomResponse(User::class, $request->userId, 'User not found', 'userId');
+        $user = User::where('id', $request->userId)->first();
         $userTypeFetch = $user->type;
 
         if($userTypeFetch != "instructor") {
@@ -276,7 +276,7 @@ class OnboardingController extends Controller
             return ResponseHelper::error($firstError, $validator->errors(), 422);
         }
 
-        $user = ModelHelper::findOrFailWithCustomResponse(User::class, $request->userId, 'User not found', 'userId');
+        $user = User::where('id', $request->userId)->first();
         $userTypeFetch = $user->type;
 
         if($userTypeFetch != "instructor") {

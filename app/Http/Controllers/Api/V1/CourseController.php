@@ -39,11 +39,11 @@ class CourseController extends Controller
             return ResponseHelper::error($firstError, $validator->errors(), 422);
         }
 
-        $user = ModelHelper::findOrFailWithCustomResponse(User::class, $request->userId, 'User not found', 'userId');
+        $user = User::where('id', $request->userId)->first();
         $userTypeFetch = $user->type;
 
         if($userTypeFetch != "instructor") {
-            return ResponseHelper::error('Profile not found');
+            return ResponseHelper::error('Instructor profile not found');
         }
 
         $userType = $user->instructor;
@@ -72,6 +72,53 @@ class CourseController extends Controller
         }
 
         return ResponseHelper::success('Course created successfully', ['course' => $course]);
+    }
+
+    public function editCourse(Request $request) {
+        $validator = Validator::make($request->all(), [
+            'courseId' => 'required|exists:courses,id',
+            'title' => 'required|string',
+            'description' => 'required|string',
+            'who_can_enroll' => 'required|string',
+            'price' => 'nullable|integer',
+            'is_free' => 'string',
+            'categories' => 'required|array',
+            'categories.*' => 'string',
+        ]);
+
+        if ($validator->fails()) {
+            $firstError = $validator->errors()->first();
+            return ResponseHelper::error($firstError, $validator->errors(), 422);
+        }
+
+        $checkFree = false;
+        if($request->is_free != 'false') {
+            $checkFree = true;
+        }
+
+        $course = Course::where('id', $request->courseId)->first();
+        $course->title = $request->title;
+        $course->description = $request->description;
+        $course->who_can_enroll = $request->who_can_enroll;
+        $course->price = $request->price;
+        $course->is_free = $checkFree;
+
+        // fetch and delete all previous categories
+        $previousCategories = CourseCategory::where('course_id', $request->courseId)->get();
+        if($previousCategories) {
+            foreach($previousCategories as $category) {
+                $category->delete();
+            }
+        }
+
+        $categories = $request->categories;
+        foreach($categories as $category) {
+            $categoryFetch = Category::where('name', $category)->firstOrFail();
+            CourseCategory::create([
+                'course_id' => $course->id,
+                'category_id' => $categoryFetch->id,
+            ]);
+        }
     }
 
     public function getCourse(Request $request) {
@@ -127,8 +174,6 @@ class CourseController extends Controller
             return ResponseHelper::error($firstError, $validator->errors(), 422);
         }
 
-        $course = ModelHelper::findOrFailWithCustomResponse(Course::class, $request->courseId, 'Course not found', 'courseId');
-
         // get the number of all the modules to get order
         $modulesCount = CoursesSection::where('course_id', $request->courseId)->count();
         $order = $modulesCount + 1;
@@ -183,7 +228,10 @@ class CourseController extends Controller
                 // make the module the last order
                 // get the number of all the modules to get order
                 $modulesCount = CoursesSection::where('course_id', $request->courseId)->count();
-                $newOrder = $modulesCount + 1;
+                $highestOrder = $modulesCount;
+                $lowestOrder = '1';
+
+                return ResponseHelper::error('Invalid Position. Highest postion is '.$highestOrder.' and lowest position is '.$lowestOrder.'.');
             }
         }
 
@@ -209,16 +257,19 @@ class CourseController extends Controller
             $firstError = $validator->errors()->first();
             return ResponseHelper::error($firstError, $validator->errors(), 422);
         }
-
-        $module = ModelHelper::findOrFailWithCustomResponse(CoursesSection::class, $request->moduleId, 'Module not found', 'moduleId');
-        $moduleUse = $module->with('videos', 'resources')->where('id', $request->moduleId)->first();
+        $moduleUse = CoursesSection::with([
+            'videos' => function ($query) {
+                $query->orderBy('order');
+            },
+            'resources'
+        ])->where('id', $request->moduleId)->first();
         return ResponseHelper::success('Module fetched successfully', ['module' => $moduleUse]);
     }
 
     // Video Functions
     public function uploadVideo(Request $request) {
         $validator = Validator::make($request->all(), [
-            'moduleId' => 'required|string',
+            'moduleId' => 'required|exists:course_sections,id',
             'title' => 'required|string',
             'video' => 'required|file|mimes:mp4,mov,avi,webm,mkv|max:512000', // 500MB max
             'duration' => 'required',
@@ -229,7 +280,6 @@ class CourseController extends Controller
             return ResponseHelper::error($firstError, $validator->errors(), 422);
         }
 
-        $module = ModelHelper::findOrFailWithCustomResponse(CoursesSection::class, $request->moduleId, 'Module not found', 'moduleId');
         // get the number of all the videos in that module to get order
         $videosCount = CoursesVideo::where('course_section_id', $request->moduleId)->count();
         $order = $videosCount + 1;
@@ -300,11 +350,13 @@ class CourseController extends Controller
             }
 
             else {
-                // no module was found with that order
-                // make the module the last order
-                // get the number of all the modules to get order
+                // no video was found with that order
+                // return error message
                 $videosCount = CoursesVideo::where('course_section_id', $request->moduleId)->count();
-                $newOrder = $modulesCount + 1;
+                $highestOrder = $videosCount;
+                $lowestOrder = '1';
+
+                return ResponseHelper::error('Invalid Position. Highest position is '.$highestOrder.' and lowest position is '.$lowestOrder.'.');
             }
         }
 
@@ -319,7 +371,7 @@ class CourseController extends Controller
         $video->order = $newOrder;
         $video->save();
 
-        return ResponseHelper::success('Module Updated successfully', ['video' => $video]);
+        return ResponseHelper::success('Video Updated successfully', ['video' => $video]);
     }
 
     // Resource Functions
@@ -373,5 +425,65 @@ class CourseController extends Controller
         ]);
 
         return ResponseHelper::success('Resource added successfully');
+    }
+
+    public function editResource(Request $request) {
+        $validator = Validator::make($request->all(), [
+            'title' => 'required',
+            'type' => 'required',
+            'category' => 'required',
+            'videoId' => 'nullable|exists:course_videos,id',
+            'moduleId' => 'nullable|exists:course_sections,id',
+            'document' => 'nullable|file|mimes:docs,pdf,txt,pptx,xlsx,csv,zip,rar|max:5200', // max 5MB
+            'url' => 'nullable',
+            'resourceId' => 'required|exists:course_resources,id',
+        ]);
+
+        if ($validator->fails()) {
+            $firstError = $validator->errors()->first();
+            return ResponseHelper::error($firstError, $validator->errors(), 422);
+        }
+
+        $resource = CoursesResource::where('id', $request->resourceId)->first();
+        $path = $resource->file_path;
+        $previousType = $resource->type;
+
+        $type = $request->type;
+        $document = $request->document;
+        $url = $request->url;
+
+        if($type == 'document' && $document == null && $path == null  ) {
+            return ResponseHelper::error('No document found');
+        }
+
+        elseif($type == 'link' && $url == null) {
+            return ResponseHelper::error('No URL found');
+        }
+
+        if($type == 'document' && $document != null) {
+            // store document
+            if ($request->hasFile('document')) {
+                $path = $request->file('document')->store('uploads/resources', 'public');
+            }
+        }
+
+        if(($previousType == 'document' && $type !== 'document') || ($previousType == 'document' && $document != null)) {
+            // delete previous document
+            if (Storage::disk('public')->exists($resource->file_path)) {
+                Storage::disk('public')->delete($resource->file_path);
+            }
+        }
+
+        // update database
+        $resource->course_section_id = $request->moduleId;
+        $resource->course_video_id = $request->videoId;
+        $resource->title = $request->title;
+        $resource->type = $request->type;
+        $resource->category = $request->category;
+        $resource->file_path = $path;
+        $resource->external_url = $url;
+        $resource->save();
+
+        return ResponseHelper::success('Resource updated successfully');
     }
 }

@@ -28,6 +28,7 @@ Route::prefix('v1')->group(function () {
 
         // Courses
         Route::post('/upload-course', [CourseController::class, 'uploadCourse']);
+        Route::post('/edit-course', [CourseController::class, 'editCourse']);
         Route::post('/all-courses', [CourseController::class, 'allCourses']);
         Route::post('/get-course-details', [CourseController::class, 'getCourse']);
 
@@ -42,6 +43,7 @@ Route::prefix('v1')->group(function () {
 
         // Resource
         Route::post('/upload-resource', [CourseController::class, 'uploadResource']);
+        Route::post('/edit-resource', [CourseController::class, 'editResource']);
     });
 
     // Utilities
