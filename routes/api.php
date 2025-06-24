@@ -33,10 +33,12 @@ Route::prefix('v1')->group(function () {
 
         // Modules
         Route::post('/upload-module', [CourseController::class, 'addModules']);
+        Route::post('/edit-module', [CourseController::class, 'editModule']);
         Route::post('/get-module-details', [CourseController::class, 'getModule']);
 
         // Videos
         Route::post('/upload-video', [CourseController::class, 'uploadVideo']);
+        Route::post('/edit-video', [CourseController::class, 'editVideo']);
 
         // Resource
         Route::post('/upload-resource', [CourseController::class, 'uploadResource']);

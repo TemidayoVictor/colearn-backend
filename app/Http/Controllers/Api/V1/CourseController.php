@@ -8,6 +8,7 @@ use App\Helpers\ResponseHelper;
 use App\Helpers\ModelHelper;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 
 use App\Models\User;
 use App\Models\Course;
@@ -20,7 +21,7 @@ use App\Models\Category;
 
 class CourseController extends Controller
 {
-    //
+    //Course functions
     public function uploadCourse(Request $request) {
         $validator = Validator::make($request->all(), [
             'userId' => 'required|exists:users,id',
@@ -73,6 +74,29 @@ class CourseController extends Controller
         return ResponseHelper::success('Course created successfully', ['course' => $course]);
     }
 
+    public function getCourse(Request $request) {
+        $validator = Validator::make($request->all(), [
+            'courseId' => 'required|exists:courses,id',
+        ]);
+
+        if ($validator->fails()) {
+            $firstError = $validator->errors()->first();
+            return ResponseHelper::error($firstError, $validator->errors(), 422);
+        }
+
+        $courseUse = Course::with([
+            'modules' => function ($query) {
+                $query->orderBy('order');
+            },
+            'modules.videos' => function ($query) {
+                $query->orderBy('order');
+            },
+            'resources'
+        ])->where('id', $request->courseId)->first();
+
+        return ResponseHelper::success('Data fetched successfully', ['course' => $courseUse]);
+    }
+
     public function allCourses(Request $request) {
         $validator = Validator::make($request->all(), [
             'instructorId' => 'required|exists:instructors,id',
@@ -89,22 +113,7 @@ class CourseController extends Controller
         return ResponseHelper::success('Courses fetched successfully', ['courses' => $courses]);
     }
 
-    public function getCourse(Request $request) {
-        $validator = Validator::make($request->all(), [
-            'courseId' => 'required|exists:courses,id',
-        ]);
-
-        if ($validator->fails()) {
-            $firstError = $validator->errors()->first();
-            return ResponseHelper::error($firstError, $validator->errors(), 422);
-        }
-
-        $course = ModelHelper::findOrFailWithCustomResponse(Course::class, $request->courseId, 'Course not found', 'courseId');
-        // $modules = CoursesSection::where('course_id', $request->courseId)->get();
-        $courseUse = $course->with('modules.videos', 'resources')->where('id', $request->courseId)->first();
-        return ResponseHelper::success('Data fetched successfully', ['course' => $courseUse]);
-    }
-
+    // Module Functions
     public function addModules(Request $request) {
 
         $validator = Validator::make($request->all(), [
@@ -135,22 +144,25 @@ class CourseController extends Controller
         return ResponseHelper::success('Module Added successfully', ['module' => $module]);
     }
 
-    public function editModules(Request $request) {
+    public function editModule(Request $request) {
 
         $validator = Validator::make($request->all(), [
             'title' => 'required',
             'description' => 'required',
             'order' => 'required',
             'courseId' => 'required|exists:courses,id',
-            'moduleId' => 'required',
+            'moduleId' => 'required|exists:course_sections,id',
         ]);
+
 
         if ($validator->fails()) {
             $firstError = $validator->errors()->first();
             return ResponseHelper::error($firstError, $validator->errors(), 422);
         }
 
-        $module = ModelHelper::findOrFailWithCustomResponse(CoursesSection::class, $request->moduleId, 'Module not found', 'moduleId');
+        $module = CoursesSection::where('id', $request->moduleId)->first();
+
+        $requestOrder = $request->order;
         $previousOrder = $module->order;
 
         // check for change in order
@@ -175,6 +187,10 @@ class CourseController extends Controller
             }
         }
 
+        else {
+            $newOrder = $request->order;
+        }
+
         // update module
         $module->title = $request->title;
         $module->description = $request->description;
@@ -186,7 +202,7 @@ class CourseController extends Controller
 
     public function getModule(Request $request) {
         $validator = Validator::make($request->all(), [
-            'moduleId' => 'required|string',
+            'moduleId' => 'required|string|exists:course_sections,id',
         ]);
 
         if ($validator->fails()) {
@@ -199,6 +215,7 @@ class CourseController extends Controller
         return ResponseHelper::success('Module fetched successfully', ['module' => $moduleUse]);
     }
 
+    // Video Functions
     public function uploadVideo(Request $request) {
         $validator = Validator::make($request->all(), [
             'moduleId' => 'required|string',
@@ -236,22 +253,76 @@ class CourseController extends Controller
 
     }
 
-    public function getAllModuleVideos(Request $request) {
+    public function editVideo(Request $request) {
+
         $validator = Validator::make($request->all(), [
+            'title' => 'required',
+            'video' => 'nullable|file|mimes:mp4,mov,avi,webm,mkv|max:512000', // 500MB max
+            'duration' => 'required',
+            'order' => 'required',
             'moduleId' => 'required|exists:course_sections,id',
+            'videoId' => 'required|exists:course_videos,id',
         ]);
+
 
         if ($validator->fails()) {
             $firstError = $validator->errors()->first();
             return ResponseHelper::error($firstError, $validator->errors(), 422);
         }
 
-        $module = ModelHelper::findOrFailWithCustomResponse(CoursesSection::class, $request->moduleId, 'Module not found', 'moduleId');
+        $video = CoursesVideo::where('id', $request->videoId)->first();
 
-        $videos = CoursesVideo::where('course_section_id', $request->moduleId)->get();
-        return ResponseHelper::success('Videos fetched successfully', ['module' => $module, 'videos' => $videos]);
+        $requestOrder = $request->order;
+        $previousOrder = $video->order;
+
+        $path = $video->video_url;
+        if ($request->hasFile('video')) {
+            // store new video
+            $path = $request->file('video')->store('uploads/lesson_videos', 'public');
+
+            // delete previous video
+            if (Storage::disk('public')->exists($video->video_url)) {
+                Storage::disk('public')->delete($video->video_url);
+            }
+        }
+
+        // check for change in order
+        if($previousOrder != $requestOrder) {
+            // change deteted
+            // check module that had that order, and swap
+            $videoWithNewOrder = CoursesVideo::where('course_section_id', $request->moduleId)->where('order', $request->order)->first();
+
+            if($videoWithNewOrder) {
+                $videoWithNewOrder->order = $previousOrder;
+                $videoWithNewOrder->save();
+
+                $newOrder = $request->order;
+            }
+
+            else {
+                // no module was found with that order
+                // make the module the last order
+                // get the number of all the modules to get order
+                $videosCount = CoursesVideo::where('course_section_id', $request->moduleId)->count();
+                $newOrder = $modulesCount + 1;
+            }
+        }
+
+        else {
+            $newOrder = $request->order;
+        }
+
+        // update module
+        $video->title = $request->title;
+        $video->video_url = $path;
+        $video->duration = $request->duration;
+        $video->order = $newOrder;
+        $video->save();
+
+        return ResponseHelper::success('Module Updated successfully', ['video' => $video]);
     }
 
+    // Resource Functions
     public function uploadResource(Request $request) {
         $validator = Validator::make($request->all(), [
             'title' => 'required',
