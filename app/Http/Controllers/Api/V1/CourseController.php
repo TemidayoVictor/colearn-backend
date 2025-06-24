@@ -144,6 +144,27 @@ class CourseController extends Controller
         return ResponseHelper::success('Data fetched successfully', ['course' => $courseUse]);
     }
 
+    public function getCourseEdit(Request $request) {
+        $validator = Validator::make($request->all(), [
+            'courseId' => 'required|exists:courses,id',
+        ]);
+
+        if ($validator->fails()) {
+            $firstError = $validator->errors()->first();
+            return ResponseHelper::error($firstError, $validator->errors(), 422);
+        }
+
+        $courseUse = Course::where('id', $request->courseId)->first();
+        $categories = $courseUse->categories->map(function ($cat) {
+            return [
+                'id' => $cat->id,
+                'name' => $cat->name,
+            ];
+        });
+
+        return ResponseHelper::success('Data fetched successfully', ['course' => $courseUse, 'categories', $categories]);
+    }
+
     public function allCourses(Request $request) {
         $validator = Validator::make($request->all(), [
             'instructorId' => 'required|exists:instructors,id',

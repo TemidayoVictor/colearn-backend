@@ -13,4 +13,9 @@ class CourseCategory extends Model
         'course_id',
         'category_id',
     ];
+
+    public function courses()
+{
+    return $this->belongsToMany(Course::class, 'course_category', 'category_id', 'course_id');
+}
 }

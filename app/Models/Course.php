@@ -29,4 +29,9 @@ class Course extends Model
     {
         return $this->hasMany(CoursesResource::class);
     }
+
+    public function categories()
+    {
+        return $this->belongsToMany(Category::class, 'course_category', 'course_id', 'category_id');
+    }
 }

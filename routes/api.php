@@ -31,6 +31,7 @@ Route::prefix('v1')->group(function () {
         Route::post('/edit-course', [CourseController::class, 'editCourse']);
         Route::post('/all-courses', [CourseController::class, 'allCourses']);
         Route::post('/get-course-details', [CourseController::class, 'getCourse']);
+        Route::post('/get-course-details-edit', [CourseController::class, 'getCourseEdit']);
 
         // Modules
         Route::post('/upload-module', [CourseController::class, 'addModules']);
