@@ -14,4 +14,9 @@ class Category extends Model
         'slug',
         'description',
     ];
+
+    public function courses()
+    {
+        return $this->belongsToMany(Course::class, 'course_category', 'category_id', 'course_id');
+    }
 }

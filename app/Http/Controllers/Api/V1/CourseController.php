@@ -32,6 +32,7 @@ class CourseController extends Controller
             'is_free' => 'string',
             'categories' => 'required|array',
             'categories.*' => 'string',
+            'course_picture' => 'required|image|mimes:jpeg,png,jpg|max:2048',
         ]);
 
         if ($validator->fails()) {
@@ -48,6 +49,10 @@ class CourseController extends Controller
 
         $userType = $user->instructor;
 
+        if ($request->hasFile('course_picture')) {
+            $path = $request->file('course_picture')->store('uploads/course_thumbnails', 'public');
+        }
+
         $checkFree = false;
         if($request->is_free != 'false') {
             $checkFree = true;
@@ -59,6 +64,7 @@ class CourseController extends Controller
             'description' => $request->description,
             'who_can_enroll' => $request->who_can_enroll,
             'price' => $checkFree ? null : $request->price,
+            'thumbnail' => $path,
             'is_free' => $checkFree,
         ]);
 
@@ -84,7 +90,10 @@ class CourseController extends Controller
             'is_free' => 'string',
             'categories' => 'required|array',
             'categories.*' => 'string',
+            'course_picture' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
         ]);
+
+        Log::info($request);
 
         if ($validator->fails()) {
             $firstError = $validator->errors()->first();
@@ -97,11 +106,27 @@ class CourseController extends Controller
         }
 
         $course = Course::where('id', $request->courseId)->first();
+
+        $path = $course->thumbnail;
+        if ($request->hasFile('course_picture')) {
+            // store new image
+            $path = $request->file('course_picture')->store('uploads/course_thumbnails', 'public');
+
+            // delete previous video
+            if ($course->thumbnail != null) {
+                if (Storage::disk('public')->exists($course->thumbnail)) {
+                    Storage::disk('public')->delete($course->thumbnail);
+                }
+            }
+        }
+
         $course->title = $request->title;
         $course->description = $request->description;
         $course->who_can_enroll = $request->who_can_enroll;
         $course->price = $request->price;
         $course->is_free = $checkFree;
+        $course->thumbnail = $path;
+        $course->save();
 
         // fetch and delete all previous categories
         $previousCategories = CourseCategory::where('course_id', $request->courseId)->get();
@@ -119,6 +144,8 @@ class CourseController extends Controller
                 'category_id' => $categoryFetch->id,
             ]);
         }
+
+        return ResponseHelper::success('Course updated successfully', ['course' => $course]);
     }
 
     public function getCourse(Request $request) {
@@ -154,15 +181,8 @@ class CourseController extends Controller
             return ResponseHelper::error($firstError, $validator->errors(), 422);
         }
 
-        $courseUse = Course::where('id', $request->courseId)->first();
-        $categories = $courseUse->categories->map(function ($cat) {
-            return [
-                'id' => $cat->id,
-                'name' => $cat->name,
-            ];
-        });
-
-        return ResponseHelper::success('Data fetched successfully', ['course' => $courseUse, 'categories', $categories]);
+        $courseUse = Course::with('categories')->findOrFail($request->courseId);
+        return ResponseHelper::success('Data fetched successfully', ['course' => $courseUse]);
     }
 
     public function allCourses(Request $request) {
@@ -305,6 +325,13 @@ class CourseController extends Controller
         $videosCount = CoursesVideo::where('course_section_id', $request->moduleId)->count();
         $order = $videosCount + 1;
 
+        // get module to know number of videos under module and number of videos under course and increment.
+        $module = CoursesSection::where('id', $request->moduleId)->first();
+        $moduleVideos = $module->videos;
+        $courseId = $module->course_id;
+        $course = Course::where('id', $courseId)->first();
+        $courseVideos = $course->videos;
+
         // store video
         $path = null;
         if ($request->hasFile('video')) {
@@ -319,6 +346,13 @@ class CourseController extends Controller
             'duration' => $request->duration,
             'order' => $order,
         ]);
+
+        // update the module and course videos count
+        $module->videos = $moduleVideos + 1;
+        $module->save();
+
+        $course->videos = $courseVideos + 1;
+        $course->save();
 
         return ResponseHelper::success('Video Uploaded successfully', ['video' => $video]);
 
