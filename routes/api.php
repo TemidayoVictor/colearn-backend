@@ -32,19 +32,26 @@ Route::prefix('v1')->group(function () {
         Route::post('/all-courses', [CourseController::class, 'allCourses']);
         Route::post('/get-course-details', [CourseController::class, 'getCourse']);
         Route::post('/get-course-details-edit', [CourseController::class, 'getCourseEdit']);
+        Route::post('/delete-course', [CourseController::class, 'deleteCourse']);
 
         // Modules
         Route::post('/upload-module', [CourseController::class, 'addModules']);
         Route::post('/edit-module', [CourseController::class, 'editModule']);
         Route::post('/get-module-details', [CourseController::class, 'getModule']);
+        Route::post('/delete-module', [CourseController::class, 'deleteModule']);
 
         // Videos
         Route::post('/upload-video', [CourseController::class, 'uploadVideo']);
         Route::post('/edit-video', [CourseController::class, 'editVideo']);
+        Route::post('/delete-video', [CourseController::class, 'deleteVideo']);
 
         // Resource
         Route::post('/upload-resource', [CourseController::class, 'uploadResource']);
         Route::post('/edit-resource', [CourseController::class, 'editResource']);
+        Route::post('/delete-resource', [CourseController::class, 'deleteResource']);
+
+        // Publish
+        Route::post('/publish-resource', [CourseController::class, 'publishCourse']);
     });
 
     // Utilities

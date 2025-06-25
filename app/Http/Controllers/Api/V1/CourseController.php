@@ -201,6 +201,45 @@ class CourseController extends Controller
         return ResponseHelper::success('Courses fetched successfully', ['courses' => $courses]);
     }
 
+    public function deleteCourse(Request $request) {
+        $validator = Validator::make($request->all(), [
+            'courseId' => 'required|exists:courses,id',
+        ]);
+
+        if ($validator->fails()) {
+            $firstError = $validator->errors()->first();
+            return ResponseHelper::error($firstError, $validator->errors(), 422);
+        }
+
+        $course = Course::where('id', $request->courseId)->first();
+
+        $modules = CoursesSection::where('course_id', $request->courseId)->get();
+
+        foreach($modules as $module) {
+            // fetch and delete all videos under module
+            $videos = CoursesVideo::where('course_section_id', $request->moduleId)->get();
+            foreach($videos as $video) {
+                $path = $video->video_url;
+
+                // if there is an attached file, delete it
+                if($path != null) {
+                    if (Storage::disk('public')->exists($path)) {
+                        Storage::disk('public')->delete($path);
+                    }
+                }
+
+                $video->delete();
+            }
+
+            // delete module
+            $module->delete();
+        }
+
+        // delete course
+        $course->delete();
+        return ResponseHelper::success('Module deleted successfully');
+    }
+
     // Module Functions
     public function addModules(Request $request) {
 
@@ -305,6 +344,38 @@ class CourseController extends Controller
             'resources'
         ])->where('id', $request->moduleId)->first();
         return ResponseHelper::success('Module fetched successfully', ['module' => $moduleUse]);
+    }
+
+    public function deleteModule(Request $request) {
+        $validator = Validator::make($request->all(), [
+            'moduleId' => 'required|string|exists:course_sections,id',
+        ]);
+
+        if ($validator->fails()) {
+            $firstError = $validator->errors()->first();
+            return ResponseHelper::error($firstError, $validator->errors(), 422);
+        }
+
+        $module = CoursesSection::where('id', $request->moduleId)->first();
+
+        // fetch and delete all videos under module
+        $videos = CoursesVideo::where('course_section_id', $request->moduleId)->get();
+        foreach($videos as $video) {
+            $path = $video->video_url;
+
+            // if there is an attached file, delete it
+            if($path != null) {
+                if (Storage::disk('public')->exists($path)) {
+                    Storage::disk('public')->delete($path);
+                }
+            }
+
+            $video->delete();
+        }
+
+        // delete module
+        $module->delete();
+        return ResponseHelper::success('Module deleted successfully');
     }
 
     // Video Functions
@@ -429,6 +500,49 @@ class CourseController extends Controller
         return ResponseHelper::success('Video Updated successfully', ['video' => $video]);
     }
 
+    public function deleteVideo(Request $request) {
+        $validator = Validator::make($request->all(), [
+            'videoId' => 'required|exists:course_videos,id',
+        ]);
+
+        if ($validator->fails()) {
+            $firstError = $validator->errors()->first();
+            return ResponseHelper::error($firstError, $validator->errors(), 422);
+        }
+
+        $video = CoursesVideo::where('id', $request->videoId)->first();
+        $path = $video->video_url;
+
+        // if there is an attached file, delete it
+        if($path != null) {
+            if (Storage::disk('public')->exists($path)) {
+                Storage::disk('public')->delete($path);
+            }
+        }
+
+        // get module to know number of videos under module and number of videos under course and increment.
+        $module = CoursesSection::where('id', $video->course_section_id)->first();
+        $moduleVideos = $module->videos;
+        $courseId = $module->course_id;
+        $course = Course::where('id', $courseId)->first();
+        $courseVideos = $course->videos;
+
+        // update the module and course videos count
+        if($module->videos > 0) {
+            $module->videos = $moduleVideos - 1;
+            $module->save();
+        }
+
+        if($course->videos > 0) {
+            $course->videos = $courseVideos - 1;
+            $course->save();
+        }
+
+        $video->delete();
+        return ResponseHelper::success('Resource deleted successfully');
+
+    }
+
     // Resource Functions
     public function uploadResource(Request $request) {
         $validator = Validator::make($request->all(), [
@@ -540,5 +654,52 @@ class CourseController extends Controller
         $resource->save();
 
         return ResponseHelper::success('Resource updated successfully');
+    }
+
+    public function deleteResource(Request $request) {
+        $validator = Validator::make($request->all(), [
+            'resourceId' => 'required|exists:course_resources,id',
+        ]);
+
+        if ($validator->fails()) {
+            $firstError = $validator->errors()->first();
+            return ResponseHelper::error($firstError, $validator->errors(), 422);
+        }
+
+        $resource = CoursesResource::where('id', $request->resourceId)->first();
+        $path = $resource->file_path;
+
+        // if there is an attached file, delete it
+        if($path != null) {
+            if (Storage::disk('public')->exists($path)) {
+                Storage::disk('public')->delete($path);
+            }
+        }
+
+        $resource->delete();
+        return ResponseHelper::success('Resource deleted successfully');
+
+    }
+
+    public function publishCourse(Request $request) {
+        $validator = Validator::make($request->all(), [
+            'courseId' => 'required|exists:courses,id',
+        ]);
+
+        if ($validator->fails()) {
+            $firstError = $validator->errors()->first();
+            return ResponseHelper::error($firstError, $validator->errors(), 422);
+        }
+
+        $course = Course::where('id', $request->courseId)->first();
+        $videos = $course->videos;
+
+        if($videos == null || $videos == 0) {
+            return ResponseHelper::error('Please upload at least one video in order to publish course');
+        }
+
+        $course->is_published = true;
+        $course->save();
+        return ResponseHelper::success('Course published successfully');
     }
 }
