@@ -22,6 +22,21 @@ use App\Models\Category;
 class CourseController extends Controller
 {
     //Course functions
+
+    public function allCourses(Request $request) {
+        $validator = Validator::make($request->all(), [
+            'instructorId' => 'required|exists:instructors,id',
+        ]);
+
+        if ($validator->fails()) {
+            $firstError = $validator->errors()->first();
+            return ResponseHelper::error($firstError, $validator->errors(), 422);
+        }
+
+        $courses = Course::where('instructor_id', $request->instructorId)->get();
+        return ResponseHelper::success('Courses fetched successfully', ['courses' => $courses]);
+    }
+
     public function uploadCourse(Request $request) {
         $validator = Validator::make($request->all(), [
             'userId' => 'required|exists:users,id',
@@ -185,22 +200,6 @@ class CourseController extends Controller
         return ResponseHelper::success('Data fetched successfully', ['course' => $courseUse]);
     }
 
-    public function allCourses(Request $request) {
-        $validator = Validator::make($request->all(), [
-            'instructorId' => 'required|exists:instructors,id',
-        ]);
-
-        if ($validator->fails()) {
-            $firstError = $validator->errors()->first();
-            return ResponseHelper::error($firstError, $validator->errors(), 422);
-        }
-
-        $instructor = ModelHelper::findOrFailWithCustomResponse(Instructor::class, $request->instructorId, 'Instructor not found', 'instructorId');
-
-        $courses = Course::where('instructor_id', $request->instructorId)->get();
-        return ResponseHelper::success('Courses fetched successfully', ['courses' => $courses]);
-    }
-
     public function deleteCourse(Request $request) {
         $validator = Validator::make($request->all(), [
             'courseId' => 'required|exists:courses,id',
@@ -237,7 +236,7 @@ class CourseController extends Controller
 
         // delete course
         $course->delete();
-        return ResponseHelper::success('Module deleted successfully');
+        return ResponseHelper::success('Course deleted successfully');
     }
 
     // Module Functions
