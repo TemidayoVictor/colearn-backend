@@ -38,4 +38,20 @@ class Instructor extends Model
     {
         return $this->hasMany(Experience::class);
     }
+
+    public function courses()
+    {
+        return $this->hasMany(Course::class);
+    }
+
+    public function schools()
+    {
+        return $this->hasMany(School::class);
+    }
+
+    public function certifications()
+    {
+        return $this->hasMany(Certification::class);
+    }
+
 }
