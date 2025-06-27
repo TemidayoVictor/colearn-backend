@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\V1\Auth\AuthController;
 use App\Http\Controllers\Api\V1\OnboardingController;
 use App\Http\Controllers\Api\V1\UtilitiesController;
 use App\Http\Controllers\Api\V1\CourseController;
+use App\Http\Controllers\Api\V1\ConsultantController;
 
 Route::prefix('v1')->group(function () {
     // Sign up
@@ -50,8 +51,12 @@ Route::prefix('v1')->group(function () {
         Route::post('/edit-resource', [CourseController::class, 'editResource']);
         Route::post('/delete-resource', [CourseController::class, 'deleteResource']);
 
-        // Publish
+        // Publish Course
         Route::post('/publish-resource', [CourseController::class, 'publishCourse']);
+
+        // Consultant
+        Route::post('/submit-schools', [ConsultantController::class, 'submitSchools']);
+        Route::post('/submit-certs', [ConsultantController::class, 'submitCerts']);
     });
 
     // Utilities

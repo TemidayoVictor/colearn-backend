@@ -27,6 +27,9 @@ class Instructor extends Model
         'disciplines',
         'languages',
         'category',
+        'consultant',
+        'intro_video_url',
+        'consultant_progress',
     ];
 
     public function user()
