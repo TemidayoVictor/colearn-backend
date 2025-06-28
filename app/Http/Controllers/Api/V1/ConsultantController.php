@@ -63,7 +63,7 @@ class ConsultantController extends Controller
     }
 
     public function editSchools(Request $request) {
-        Log::info($request);
+
         $validator = Validator::make($request->all(), [
             'id' => 'required|exists:schools,id',
             'name' => 'required|string|max:255',
@@ -103,8 +103,6 @@ class ConsultantController extends Controller
             'certs.*.image' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
         ]);
 
-        Log::info($request);
-
         if ($validator->fails()) {
             $firstError = $validator->errors()->first();
             return ResponseHelper::error($firstError, $validator->errors(), 422);
@@ -125,9 +123,9 @@ class ConsultantController extends Controller
                 Certification::create([
                     'instructor_id' => $request->instructorId,
                     'certification_name' => $cert['name'],
-                    'issuing_organization' => $cert['organization'],
-                    'issue_date' => $cert['iss_date'] ?? null,
-                    'expiry_date' => $cert['exp_date'] ?? null,
+                    'organization' => $cert['organization'],
+                    'iss_date' => $cert['iss_date'] ?? null,
+                    'exp_date' => $cert['exp_date'] ?? null,
                     'credential_url' => $cert['credential_url'] ?? null,
                     'certificate_file_path' => $imagePath,
                 ]);
@@ -144,6 +142,48 @@ class ConsultantController extends Controller
         }
 
         return ResponseHelper::error('Instructor not found');
+    }
+
+    public function editCert(Request $request) {
+        $validator = Validator::make($request->all(), [
+            'id' => 'required|exists:certifications,id',
+            'name' => 'required|string|max:255',
+            'organization' => 'required|string|max:255',
+            'iss_date' => 'nullable|string|max:255',
+            'exp_date' => 'nullable|string|max:255',
+            'credential_url' => 'nullable|string|max:255',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+        ]);
+
+        if ($validator->fails()) {
+            $firstError = $validator->errors()->first();
+            return ResponseHelper::error($firstError, $validator->errors(), 422);
+        }
+
+        $certification = Certification::where('id', $request->id)->first();
+
+        $path = $certification->certificate_file_path;
+        if ($request->hasFile('image')) {
+            // store new image
+            $path = $request->file('image')->store('uploads/certifications', 'public');
+
+            // delete previous image
+            if (Storage::disk('public')->exists($certification->certificate_file_path)) {
+                Storage::disk('public')->delete($certification->certificate_file_path);
+            }
+        }
+
+        $update = $certification->update([
+            'name' => $request->name,
+            'organization' => $request->organization,
+            'iss_date' => $request->iss_date,
+            'exp_date' => $request->exp_date,
+            'credential_url' => $request->credential_url,
+            'certificate_file_path' => $path,
+        ]);
+
+        return ResponseHelper::success('Certification updated successfully');
+
     }
 
     public function submitIntroVideo(Request $request) {

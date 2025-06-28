@@ -12,9 +12,9 @@ class Certification extends Model
     protected $fillable = [
         'instructor_id',
         'name',
-        'issuing_organization',
-        'issue_date',
-        'expiry_date',
+        'organization',
+        'iss_date',
+        'exp_date',
         'credential_url',
         'certificate_file_path',
     ];

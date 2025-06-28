@@ -59,6 +59,8 @@ Route::prefix('v1')->group(function () {
         Route::post('/edit-schools', [ConsultantController::class, 'editSchools']);
 
         Route::post('/submit-certs', [ConsultantController::class, 'submitCerts']);
+        Route::post('/edit-certs', [ConsultantController::class, 'editCert']);
+
         Route::post('/submit-intro-video', [ConsultantController::class, 'submitIntroVideo']);
     });
 
