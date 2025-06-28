@@ -200,9 +200,16 @@ class ConsultantController extends Controller
         $instructor = Instructor::where('id', $request->instructorId)->first();
 
         // store video
-        $path = null;
+        $path = $instructor->intro_video_url;
         if ($request->hasFile('video')) {
             $path = $request->file('video')->store('uploads/introduction_videos', 'public');
+        }
+
+        // delete previous video if any
+        if($instructor->intro_video_url != null) {
+            if (Storage::disk('public')->exists($instructor->intro_video_url)) {
+                Storage::disk('public')->delete($instructor->intro_video_url);
+            }
         }
 
         $instructor->consultant_progress = 3;
