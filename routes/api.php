@@ -62,6 +62,8 @@ Route::prefix('v1')->group(function () {
         Route::post('/edit-certs', [ConsultantController::class, 'editCert']);
 
         Route::post('/submit-intro-video', [ConsultantController::class, 'submitIntroVideo']);
+
+        Route::post('/submit-application', [ConsultantController::class, 'submitApplication']);
     });
 
     // Utilities

@@ -218,4 +218,22 @@ class ConsultantController extends Controller
 
         return ResponseHelper::success('Details Updated Successfully', ['instructor' => $instructor]);
     }
+
+    public function submitApplication(Request $request) {
+        $validator = Validator::make($request->all(), [
+            'instructorId' => 'required|exists:instructors,id',
+        ]);
+
+        if ($validator->fails()) {
+            $firstError = $validator->errors()->first();
+            return ResponseHelper::error($firstError, $validator->errors(), 422);
+        }
+
+        $instructor = Instructor::where('id', $request->instructorId)->first();
+
+        $instructor->consultant_progress = 4;
+        $instructor->save();
+
+        return ResponseHelper::success('Application submitted successfully', ['instructor' => $instructor]);
+    }
 }
