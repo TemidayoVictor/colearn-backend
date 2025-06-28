@@ -11,8 +11,8 @@ class School extends Model
 
     protected $fillable = [
         'instructor_id',
-        'institution_name',
-        'degree', // e.g. BSc, MSc, PhD
+        'name',
+        'degree',
         'field_of_study',
         'start_year',
         'end_year',

@@ -20,6 +20,7 @@ Route::post('/login', [AuthController::class, 'login']);
 Route::middleware('auth:sanctum')->group(function () {
     // authenticate user
     Route::get('/user', [AuthMiddlewareController::class, 'authenticateUser']);
+    Route::get('/user-instructor', [AuthMiddlewareController::class, 'authenticateUserInstructor']);
 
     // logout
     Route::post('/logout', [AuthController::class, 'logout']);

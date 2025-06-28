@@ -39,7 +39,7 @@ class ConsultantController extends Controller
             foreach($request->schools as $school) {
                 School::create([
                     'instructor_id' => $request->instructorId,
-                    'institution_name' => $school['name'],
+                    'name' => $school['name'],
                     'degree' => $school['degree'],
                     'field_of_study' => $school['field_of_study'],
                     'start_year' => $school['start_year'],
@@ -48,14 +48,47 @@ class ConsultantController extends Controller
                 ]);
             }
 
-            $instructor->consultant_progress = 1;
-            $instructor->save();
+            $currentProgress = $instructor->consultant_progress;
+
+            if($currentProgress < 1) {
+                $instructor->consultant_progress = 1;
+                $instructor->save();
+            }
 
             return ResponseHelper::success('Details Updated Successfully', ['instructor' => $instructor]);
         }
 
         return ResponseHelper::error('Instructor not found');
 
+    }
+
+    public function editSchools(Request $request) {
+        Log::info($request);
+        $validator = Validator::make($request->all(), [
+            'id' => 'required|exists:schools,id',
+            'name' => 'required|string|max:255',
+            'degree' => 'required|string|max:255',
+            'field_of_study' => 'nullable|string|max:255',
+            'start_year' => 'nullable|string|max:255',
+            'end_year' => 'nullable|string|max:255',
+        ]);
+
+        if ($validator->fails()) {
+            $firstError = $validator->errors()->first();
+            return ResponseHelper::error($firstError, $validator->errors(), 422);
+        }
+
+        $school = School::where('id', $request->id)->first();
+
+        $update = $school->update([
+            'name' => $request->name,
+            'degree' => $request->degree,
+            'field_of_study' => $request->field_of_study,
+            'start_year' => $request->start_year,
+            'end_year' => $request->end_year,
+        ]);
+
+        return ResponseHelper::success('School updated successfully');
     }
 
     public function submitCerts(Request $request) {
@@ -69,6 +102,8 @@ class ConsultantController extends Controller
             'certs.*.credential_url' => 'nullable|string|max:255',
             'certs.*.image' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
         ]);
+
+        Log::info($request);
 
         if ($validator->fails()) {
             $firstError = $validator->errors()->first();
@@ -98,12 +133,42 @@ class ConsultantController extends Controller
                 ]);
             }
 
-            $instructor->consultant_progress = 2;
-            $instructor->save();
+            $currentProgress = $instructor->consultant_progress;
+
+            if($currentProgress < 2) {
+                $instructor->consultant_progress = 2;
+                $instructor->save();
+            }
 
             return ResponseHelper::success('Details Updated Successfully', ['instructor' => $instructor]);
         }
 
         return ResponseHelper::error('Instructor not found');
+    }
+
+    public function submitIntroVideo(Request $request) {
+        $validator = Validator::make($request->all(), [
+            'instructorId' => 'required|exists:instructors,id',
+            'video' => 'required|file|mimes:mp4,mov,avi,webm,mkv|max:512000', // 500MB max
+        ]);
+
+        if ($validator->fails()) {
+            $firstError = $validator->errors()->first();
+            return ResponseHelper::error($firstError, $validator->errors(), 422);
+        }
+
+        $instructor = Instructor::where('id', $request->instructorId)->first();
+
+        // store video
+        $path = null;
+        if ($request->hasFile('video')) {
+            $path = $request->file('video')->store('uploads/introduction_videos', 'public');
+        }
+
+        $instructor->consultant_progress = 3;
+        $instructor->intro_video_url = $path;
+        $instructor->save();
+
+        return ResponseHelper::success('Details Updated Successfully', ['instructor' => $instructor]);
     }
 }

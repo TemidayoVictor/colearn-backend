@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Helpers\ResponseHelper;
 
+use App\Models\Instructor;
+
 class AuthMiddlewareController extends Controller
 {
     //
@@ -17,9 +19,26 @@ class AuthMiddlewareController extends Controller
         ];
 
         if ($user->type === 'student') {
-            $response['student'] = $user->student; // Assuming relationship exists
+            $response['student'] = $user->student;
         } elseif ($user->type === 'instructor') {
-            $response['instructor'] = $user->instructor; // If you plan to handle instructors
+            $response['instructor'] = $user->instructor;
+        }
+
+        return response()->json($response);
+    }
+
+    public function authenticateUserInstructor(Request $request) {
+        $user = $request->user();
+
+        $response = [
+            'user' => $user,
+        ];
+
+        if($user) {
+            if ($user->type === 'instructor') {
+                $instructor = Instructor::where('user_id', $user->id)->with('schools', 'certifications')->first();
+                $response['instructor'] = $instructor;
+            }
         }
 
         return response()->json($response);
