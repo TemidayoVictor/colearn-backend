@@ -36,7 +36,7 @@ class AuthMiddlewareController extends Controller
 
         if($user) {
             if ($user->type === 'instructor') {
-                $instructor = Instructor::where('user_id', $user->id)->with('schools', 'certifications')->first();
+                $instructor = Instructor::where('user_id', $user->id)->with('schools', 'certifications', 'consultant.slots')->first();
                 $response['instructor'] = $instructor;
             }
         }

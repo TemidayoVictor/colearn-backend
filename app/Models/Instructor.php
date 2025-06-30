@@ -57,4 +57,9 @@ class Instructor extends Model
         return $this->hasMany(Certification::class);
     }
 
+    public function consultant()
+    {
+        return $this->hasOne(Consultant::class);
+    }
+
 }

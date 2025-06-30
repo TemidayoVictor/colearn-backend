@@ -13,6 +13,7 @@ use App\Models\User;
 use App\Models\Instructor;
 use App\Models\School;
 use App\Models\Certification;
+use App\Models\Consultant;
 
 class ConsultantController extends Controller
 {
@@ -235,5 +236,39 @@ class ConsultantController extends Controller
         $instructor->save();
 
         return ResponseHelper::success('Application submitted successfully', ['instructor' => $instructor]);
+    }
+
+    public function createConsultantAccount(Request $request) {
+        $validator = Validator::make($request->all(), [
+            'instructorId' => 'required|exists:instructors,id',
+        ]);
+
+        if ($validator->fails()) {
+            $firstError = $validator->errors()->first();
+            return ResponseHelper::error($firstError, $validator->errors(), 422);
+        }
+
+        $instructor = Instructor::where('id', $request->instructorId)->first();
+        $instructor->consultant = true;
+        $instructor->save();
+
+        // create consultant account
+        $consultant = Consultant::create([
+            'instructor_id' => $request->instructorId,
+        ]);
+
+        // create available slots for the consultant
+        $availableDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+        foreach ($availableDays as $day) {
+            $consultant->slots()->create([
+                'consultant_id' => $consultant->id,
+                'day' => $day,
+                'start_time' => '',
+                'end_time' => '',
+                'enabled' => false,
+            ]);
+        }
+
+        return ResponseHelper::success('Account updated successfully', ['consultant' => $consultant]);
     }
 }
