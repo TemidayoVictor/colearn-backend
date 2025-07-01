@@ -66,6 +66,8 @@ Route::prefix('v1')->group(function () {
         Route::post('/submit-application', [ConsultantController::class, 'submitApplication']);
 
         Route::post('/create-consultant-account', [ConsultantController::class, 'createConsultantAccount']);
+
+        Route::post('/set-availability', [ConsultantController::class, 'setAvailability']);
     });
 
     // Utilities

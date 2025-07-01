@@ -14,6 +14,7 @@ use App\Models\Instructor;
 use App\Models\School;
 use App\Models\Certification;
 use App\Models\Consultant;
+use App\Models\AvailabilitySlot;
 
 class ConsultantController extends Controller
 {
@@ -252,6 +253,12 @@ class ConsultantController extends Controller
         $instructor->consultant = true;
         $instructor->save();
 
+        // check if consultant account already exists
+        $existingConsultant = Consultant::where('instructor_id', $request->instructorId)->first();
+        if ($existingConsultant) {
+            return ResponseHelper::error('Consultant account already exists', [], 422);
+        }
+
         // create consultant account
         $consultant = Consultant::create([
             'instructor_id' => $request->instructorId,
@@ -270,5 +277,45 @@ class ConsultantController extends Controller
         }
 
         return ResponseHelper::success('Account updated successfully', ['consultant' => $consultant]);
+    }
+
+    public function setAvailability(Request $request) {
+        $validator = Validator::make($request->all(), [
+            'consultantId' => 'required|exists:consultants,id',
+            'type' => 'required|string',
+            'rate' => 'nullable|string',
+            'slots' => 'required|array',
+            'slots.*.day' => 'required|string|max:255',
+            'slots.*.start_time' => 'nullable|string|max:255',
+            'slots.*.end_time' => 'nullable|string|max:255',
+            'slots.*.enabled' => 'nullable|boolean',
+            'slots.*.id' => 'required|integer|exists:availability_slots,id',
+        ]);
+
+        if ($validator->fails()) {
+            $firstError = $validator->errors()->first();
+            return ResponseHelper::error($firstError, $validator->errors(), 422);
+        }
+
+        $consultant = Consultant::where('id', $request->consultantId)->first();
+
+        $consultant->type = $request->type;
+        $consultant->hourly_rate = $request->rate;
+        $consultant->save();
+
+        // update availability slot
+        foreach ($request->slots as $slot) {
+            AvailabilitySlot::where('id', $slot['id'])
+                ->where('consultant_id', $request->consultantId) // extra safety
+                ->update([
+                    'day' => $slot['day'],
+                    'start_time' => $slot['start_time'] ? $slot['start_time'] : "" ,
+                    'end_time' => $slot['end_time'] ? $slot['end_time'] : "",
+                    'enabled' => $slot['enabled'] , // default to false if null
+                ]);
+        }
+
+        return ResponseHelper::success('Availability updated successfully', ['consultant' => $consultant]);
+
     }
 }

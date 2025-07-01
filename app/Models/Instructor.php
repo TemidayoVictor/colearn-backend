@@ -27,7 +27,7 @@ class Instructor extends Model
         'disciplines',
         'languages',
         'category',
-        'consultant',
+        'consultant_active',
         'intro_video_url',
         'consultant_progress',
     ];
