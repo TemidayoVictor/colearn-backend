@@ -318,4 +318,9 @@ class ConsultantController extends Controller
         return ResponseHelper::success('Availability updated successfully', ['consultant' => $consultant]);
 
     }
+
+    public function getAllConsultants() {
+        $consultants = Consultant::where('status', 'Active')->with('instructor.user')->get();
+        return ResponseHelper::success('Consultants fetched successfully', ['consultants' => $consultants]);
+    }
 }

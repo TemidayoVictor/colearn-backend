@@ -21,6 +21,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // authenticate user
     Route::get('/user', [AuthMiddlewareController::class, 'authenticateUser']);
     Route::get('/user-instructor', [AuthMiddlewareController::class, 'authenticateUserInstructor']);
+    Route::get('/user-student', [AuthMiddlewareController::class, 'authenticateUserStudent']);
 
     // logout
     Route::post('/logout', [AuthController::class, 'logout']);

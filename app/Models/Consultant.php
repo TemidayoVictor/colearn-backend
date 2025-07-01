@@ -16,6 +16,7 @@ class Consultant extends Model
         'available_time_start',
         'available_time_end',
         'type',
+        'status',
     ];
 
     public function instructor()
