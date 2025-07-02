@@ -8,6 +8,8 @@ use App\Helpers\ResponseHelper;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 
 use App\Models\User;
 use App\Models\Instructor;
@@ -15,6 +17,7 @@ use App\Models\School;
 use App\Models\Certification;
 use App\Models\Consultant;
 use App\Models\AvailabilitySlot;
+use App\Models\Booking;
 
 class ConsultantController extends Controller
 {
@@ -336,5 +339,66 @@ class ConsultantController extends Controller
 
         $consultant = Consultant::where('id', $request->consultantId)->with('slots')->first();
         return ResponseHelper::success('Consultant fetched successfully', ['consultant' => $consultant]);
+    }
+
+    public function bookSession(Request $request) {
+        Log::info($request);
+        $validator = Validator::make($request->all(), [
+            'consultantId' => 'required|exists:consultants,id',
+            'userId' => 'required|exists:users,id',
+            'date' => 'required|date',
+            'start_time' => 'required|string',
+            'duration' => 'required|integer|min:30',
+            'note' => 'nullable',
+        ]);
+
+        if ($validator->fails()) {
+            $firstError = $validator->errors()->first();
+            return ResponseHelper::error($firstError, $validator->errors(), 422);
+        }
+
+        $consultant = Consultant::where('id', $request->consultantId)->first();
+        $user = User::where('id', $request->userId)->first();
+
+        $start = Carbon::createFromFormat('Y-m-d g:i A', $request->date . ' ' . $request->start_time);
+        $end = $start->copy()->addMinutes($request->duration);
+
+        $hasConflict = DB::table('bookings')
+        ->where('consultant_id', $request->consultant_id)
+        ->where('date', $request->date)
+        ->where(function ($query) use ($start, $end) {
+            $query->whereBetween('start_time', [$start, $end])
+                ->orWhereBetween('end_time', [$start, $end])
+                ->orWhere(function ($query) use ($start, $end) {
+                    $query->where('start_time', '<=', $start)
+                            ->where('end_time', '>=', $end);
+                });
+        })
+        ->exists();
+
+        if ($hasConflict) {
+            return ResponseHelper::error('This time slot is already booked. Please choose another time.', [], 422);
+        }
+
+        // Convert rate from per hour to per minute
+        $ratePerMinute = $consultant->rate / 60;
+        $amountToPay = $ratePerMinute * $request->duration;
+
+        $formattedDate = Carbon::parse($request->date)->format('jS F, Y');
+
+        $booking = Booking::create([
+            'consultant_id' => $request->consultantId,
+            'user_id' => $request->userId,
+            'date' => $request->date,
+            'start_time' => $start->format('H:i:s'),
+            'end_time' => $end->format('H:i:s'),
+            'duration' => $request->duration,
+            'amount' => $amountToPay,
+            'status' => 'pending',
+            'note' => $request->note, // Optional note
+            'date_string' => $formattedDate,
+        ]);
+
+        return ResponseHelper::success('Session booked successfully', ['booking' => $booking]);
     }
 }

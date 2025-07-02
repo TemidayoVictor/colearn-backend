@@ -71,6 +71,8 @@ Route::prefix('v1')->group(function () {
 
         Route::get('/get-all-consultants', [ConsultantController::class, 'getAllConsultants']);
         Route::post('/get-consultant', [ConsultantController::class, 'getConsultant']);
+
+        Route::post('/book-session', [ConsultantController::class, 'bookSession']);
     });
 
     // Utilities
