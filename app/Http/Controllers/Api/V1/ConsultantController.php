@@ -323,4 +323,18 @@ class ConsultantController extends Controller
         $consultants = Consultant::where('status', 'Active')->with('instructor.user')->get();
         return ResponseHelper::success('Consultants fetched successfully', ['consultants' => $consultants]);
     }
+
+    public function getConsultant(Request $request) {
+        $validator = Validator::make($request->all(), [
+            'consultantId' => 'required|exists:consultants,id',
+        ]);
+
+        if ($validator->fails()) {
+            $firstError = $validator->errors()->first();
+            return ResponseHelper::error($firstError, $validator->errors(), 422);
+        }
+
+        $consultant = Consultant::where('id', $request->consultantId)->with('slots')->first();
+        return ResponseHelper::success('Consultant fetched successfully', ['consultant' => $consultant]);
+    }
 }

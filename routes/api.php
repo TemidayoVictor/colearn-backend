@@ -70,6 +70,7 @@ Route::prefix('v1')->group(function () {
         Route::post('/set-availability', [ConsultantController::class, 'setAvailability']);
 
         Route::get('/get-all-consultants', [ConsultantController::class, 'getAllConsultants']);
+        Route::post('/get-consultant', [ConsultantController::class, 'getConsultant']);
     });
 
     // Utilities
