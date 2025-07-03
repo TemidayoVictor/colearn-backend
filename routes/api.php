@@ -74,6 +74,7 @@ Route::prefix('v1')->group(function () {
 
         Route::post('/get-sessions', [ConsultantController::class, 'getSessions']);
         Route::post('/book-session', [ConsultantController::class, 'bookSession']);
+        Route::post('/update-session-user', [ConsultantController::class, 'updateSessionUser']);
     });
 
     // Utilities

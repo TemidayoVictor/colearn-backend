@@ -429,4 +429,63 @@ class ConsultantController extends Controller
 
         return ResponseHelper::success('Session booked successfully', ['booking' => $booking]);
     }
+
+    public function updateSessionUser(Request $request) {
+        $validator = Validator::make($request->all(), [
+            'id' => 'required|exists:bookings,id',
+            'date' => 'required|date',
+            'start_time' => 'required|string',
+            'duration' => 'required|integer|min:30',
+            'note' => 'nullable',
+            'user_time' => 'required',
+            'consultant_date' => 'required',
+        ]);
+
+        if ($validator->fails()) {
+            $firstError = $validator->errors()->first();
+            return ResponseHelper::error($firstError, $validator->errors(), 422);
+        }
+
+        $booking = Booking::where('id', $request->id)->first();
+        $consultantId = $booking->consultant_id;
+
+        $start = Carbon::createFromFormat('Y-m-d g:i A', $request->date . ' ' . $request->start_time);
+        $end = $start->copy()->addMinutes($request->duration);
+
+        $userStart = Carbon::createFromFormat('Y-m-d g:i A', $request->date . ' ' . $request->user_time);
+        $userEnd = $userStart->copy()->addMinutes($request->duration);
+
+        $hasConflict = DB::table('bookings')
+        ->where('consultant_id', $consultantId)
+        ->where('consultant_date', $request->consultant_date)
+        ->where(function ($query) use ($start, $end) {
+            $query->whereRaw("STR_TO_DATE(CONCAT(date, ' ', start_time), '%Y-%m-%d %h:%i %p') BETWEEN ? AND ?", [$start, $end])
+                ->orWhereRaw("STR_TO_DATE(CONCAT(date, ' ', end_time), '%Y-%m-%d %h:%i %p') BETWEEN ? AND ?", [$start, $end])
+                ->orWhere(function ($query) use ($start, $end) {
+                    $query->whereRaw("STR_TO_DATE(CONCAT(date, ' ', start_time), '%Y-%m-%d %h:%i %p') <= ?", [$start])
+                            ->whereRaw("STR_TO_DATE(CONCAT(date, ' ', end_time), '%Y-%m-%d %h:%i %p') >= ?", [$end]);
+                });
+        })
+        ->exists();
+
+        if ($hasConflict) {
+            return ResponseHelper::error('This time slot is already booked. Please choose another time.', [], 422);
+        }
+
+        $formattedDate = Carbon::parse($request->date)->format('l, M j Y');
+
+        $update = $booking->update([
+            'date' => $request->date,
+            'start_time' => $start->format('h:i A'),
+            'end_time' => $end->format('h:i A'),
+            'duration' => $request->duration,
+            'note' => $request->note, // Optional note
+            'date_string' => $formattedDate,
+            'user_time' => $userStart->format('h:i A'),
+            'user_end_time' => $userEnd->format('h:i A'),
+            'consultant_date' => $request->consultant_date,
+        ]);
+
+        return ResponseHelper::success('Session updated successfully', ['booking' => $booking]);
+    }
 }
