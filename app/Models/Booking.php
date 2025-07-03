@@ -24,5 +24,7 @@ class Booking extends Model
         'channel',
         'booking_type',
         'booking_link',
+        'user_time',
+        'consultant_date',
     ];
 }

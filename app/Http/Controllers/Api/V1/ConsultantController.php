@@ -337,7 +337,7 @@ class ConsultantController extends Controller
             return ResponseHelper::error($firstError, $validator->errors(), 422);
         }
 
-        $consultant = Consultant::where('id', $request->consultantId)->with('slots')->first();
+        $consultant = Consultant::where('id', $request->consultantId)->with('instructor.user', 'slots')->first();
         return ResponseHelper::success('Consultant fetched successfully', ['consultant' => $consultant]);
     }
 
@@ -350,6 +350,8 @@ class ConsultantController extends Controller
             'start_time' => 'required|string',
             'duration' => 'required|integer|min:30',
             'note' => 'nullable',
+            'user_time' => 'required',
+            'consultant_date' => 'required',
         ]);
 
         if ($validator->fails()) {
@@ -365,7 +367,7 @@ class ConsultantController extends Controller
 
         $hasConflict = DB::table('bookings')
         ->where('consultant_id', $request->consultant_id)
-        ->where('date', $request->date)
+        ->where('date', $request->consultant_date)
         ->where(function ($query) use ($start, $end) {
             $query->whereBetween('start_time', [$start, $end])
                 ->orWhereBetween('end_time', [$start, $end])
