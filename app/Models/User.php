@@ -31,6 +31,7 @@ class User extends Authenticatable
         'country_iso',
         'country_iso3',
         'preferences',
+        'timezone',
     ];
 
     /**

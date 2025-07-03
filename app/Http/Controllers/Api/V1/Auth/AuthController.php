@@ -7,6 +7,8 @@ use Illuminate\Http\Request;
 use App\Helpers\ResponseHelper;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Auth;
+use Stevebauman\Location\Facades\Location;
+use App\Helpers\TimeZoneHelper;
 
 use App\Models\Country;
 use App\Models\Language;
@@ -32,7 +34,24 @@ class AuthController extends Controller
             return ResponseHelper::error('Invalid Credentials', [], 401);
         }
 
-        // get all countries
+        // get and update the timezone based on the user's IP address
+        $ip = '102.89.39.111'; // or use a test IP like '102.89.39.111 $request->ip()'
+        $position = Location::get($ip);
+
+        if ($position && $position->countryCode) {
+            $timezone = TimezoneHelper::mapCountryToTimezone($position->countryCode);
+
+            // Optionally, save to user or consultant profile
+            Auth::user()->update(['timezone' => $timezone]);
+        }
+
+        else {
+            // Fallback timezone if location cannot be determined
+            $timezone = 'America/New_York';
+            Auth::user()->update(['timezone' => $timezone]);
+        }
+
+        // get all required data after successful login
         $countries = Country::all();
         $languages = Language::all();
         $preferences = Preferences::all();
