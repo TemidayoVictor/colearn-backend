@@ -28,4 +28,14 @@ class Booking extends Model
         'consultant_date',
         'user_end_time',
     ];
+
+    public function consultant()
+    {
+        return $this->belongsTo(Consultant::class);
+    }
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
 }
