@@ -365,15 +365,18 @@ class ConsultantController extends Controller
         $start = Carbon::createFromFormat('Y-m-d g:i A', $request->date . ' ' . $request->start_time);
         $end = $start->copy()->addMinutes($request->duration);
 
+        $userStart = Carbon::createFromFormat('Y-m-d g:i A', $request->date . ' ' . $request->user_time);
+        $userEnd = $userStart->copy()->addMinutes($request->duration);
+
         $hasConflict = DB::table('bookings')
-        ->where('consultant_id', $request->consultant_id)
-        ->where('date', $request->consultant_date)
+        ->where('consultant_id', $request->consultantId)
+        ->where('consultant_date', $request->consultant_date)
         ->where(function ($query) use ($start, $end) {
-            $query->whereBetween('start_time', [$start, $end])
-                ->orWhereBetween('end_time', [$start, $end])
+            $query->whereRaw("STR_TO_DATE(CONCAT(date, ' ', start_time), '%Y-%m-%d %h:%i %p') BETWEEN ? AND ?", [$start, $end])
+                ->orWhereRaw("STR_TO_DATE(CONCAT(date, ' ', end_time), '%Y-%m-%d %h:%i %p') BETWEEN ? AND ?", [$start, $end])
                 ->orWhere(function ($query) use ($start, $end) {
-                    $query->where('start_time', '<=', $start)
-                            ->where('end_time', '>=', $end);
+                    $query->whereRaw("STR_TO_DATE(CONCAT(date, ' ', start_time), '%Y-%m-%d %h:%i %p') <= ?", [$start])
+                            ->whereRaw("STR_TO_DATE(CONCAT(date, ' ', end_time), '%Y-%m-%d %h:%i %p') >= ?", [$end]);
                 });
         })
         ->exists();
@@ -386,19 +389,22 @@ class ConsultantController extends Controller
         $ratePerMinute = $consultant->rate / 60;
         $amountToPay = $ratePerMinute * $request->duration;
 
-        $formattedDate = Carbon::parse($request->date)->format('jS F, Y');
+        $formattedDate = Carbon::parse($request->date)->format('l, M j Y');
 
         $booking = Booking::create([
             'consultant_id' => $request->consultantId,
             'user_id' => $request->userId,
             'date' => $request->date,
-            'start_time' => $start->format('H:i:s'),
-            'end_time' => $end->format('H:i:s'),
+            'start_time' => $start->format('h:i A'),
+            'end_time' => $end->format('h:i A'),
             'duration' => $request->duration,
             'amount' => $amountToPay,
             'status' => 'pending',
             'note' => $request->note, // Optional note
             'date_string' => $formattedDate,
+            'user_time' => $userStart->format('h:i A'),
+            'user_end_time' => $userEnd->format('h:i A'),
+            'consultant_date' => $request->consultant_date,
         ]);
 
         return ResponseHelper::success('Session booked successfully', ['booking' => $booking]);

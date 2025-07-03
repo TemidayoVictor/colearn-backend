@@ -26,5 +26,6 @@ class Booking extends Model
         'booking_link',
         'user_time',
         'consultant_date',
+        'user_end_time',
     ];
 }
