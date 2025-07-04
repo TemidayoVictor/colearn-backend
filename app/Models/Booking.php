@@ -27,6 +27,7 @@ class Booking extends Model
         'user_time',
         'consultant_date',
         'user_end_time',
+        'cancel_note',
     ];
 
     public function consultant()

@@ -437,7 +437,7 @@ class ConsultantController extends Controller
             'start_time' => 'required|string',
             'duration' => 'required|integer|min:30',
             'note' => 'nullable',
-            'user_time' => 'required',
+            'user_start_time' => 'required',
             'consultant_date' => 'required',
         ]);
 
@@ -449,11 +449,13 @@ class ConsultantController extends Controller
         $booking = Booking::where('id', $request->id)->first();
         $consultantId = $booking->consultant_id;
 
-        $start = Carbon::createFromFormat('Y-m-d g:i A', $request->date . ' ' . $request->start_time);
-        $end = $start->copy()->addMinutes($request->duration);
+        $duration = (int) $request->duration;
 
-        $userStart = Carbon::createFromFormat('Y-m-d g:i A', $request->date . ' ' . $request->user_time);
-        $userEnd = $userStart->copy()->addMinutes($request->duration);
+        $start = Carbon::createFromFormat('Y-m-d g:i A', $request->date . ' ' . $request->start_time);
+        $end = $start->copy()->addMinutes($duration);
+
+        $userStart = Carbon::createFromFormat('Y-m-d g:i A', $request->date . ' ' . $request->user_start_time);
+        $userEnd = $userStart->copy()->addMinutes($duration);
 
         $hasConflict = DB::table('bookings')
         ->where('consultant_id', $consultantId)
@@ -478,7 +480,7 @@ class ConsultantController extends Controller
             'date' => $request->date,
             'start_time' => $start->format('h:i A'),
             'end_time' => $end->format('h:i A'),
-            'duration' => $request->duration,
+            'duration' => $duration,
             'note' => $request->note, // Optional note
             'date_string' => $formattedDate,
             'user_time' => $userStart->format('h:i A'),
@@ -487,5 +489,79 @@ class ConsultantController extends Controller
         ]);
 
         return ResponseHelper::success('Session updated successfully', ['booking' => $booking]);
+    }
+
+    public function updateSessionConsultant(Request $request) {
+        $validator = Validator::make($request->all(), [
+            'id' => 'required|exists:bookings,id',
+            'type' => 'required|string',
+            'note' => 'nullable',
+            'channel' => 'nullable|string',
+            'link' => 'nullable|string',
+        ]);
+
+        if ($validator->fails()) {
+            $firstError = $validator->errors()->first();
+            return ResponseHelper::error($firstError, $validator->errors(), 422);
+        }
+
+        $booking = Booking::where('id', $request->id)->first();
+
+        if($request->type == 'approve') {
+            if (!$request->channel || !$request->link) {
+                return ResponseHelper::error('Channel and link are required for approval', [], 422);
+            }
+        }
+
+        $update = $booking->update([
+            'status' => $request->type,
+            'note' => $request->note, // Optional note
+            'channel' => $request->channel, // Optional channel
+            'booking_link' => $request->link, // Optional link
+        ]);
+
+        return ResponseHelper::success('Session updated successfully', ['booking' => $booking]);
+    }
+
+    public function cancelSessionUser(Request $request) {
+        $validator = Validator::make($request->all(), [
+            'id' => 'required|exists:bookings,id',
+            'note' => 'required|string',
+        ]);
+
+        if ($validator->fails()) {
+            $firstError = $validator->errors()->first();
+            return ResponseHelper::error($firstError, $validator->errors(), 422);
+        }
+
+        $booking = Booking::where('id', $request->id)->first();
+
+        $cancel = $booking->update([
+            'status' => 'cancelled-by-user',
+            'cancel_note' => $request->note,
+        ]);
+
+        return ResponseHelper::success('Session cancelled successfully', ['booking' => $booking]);
+    }
+
+    public function cancelSessionConsultant(Request $request) {
+        $validator = Validator::make($request->all(), [
+            'id' => 'required|exists:bookings,id',
+            'note' => 'required|string',
+        ]);
+
+        if ($validator->fails()) {
+            $firstError = $validator->errors()->first();
+            return ResponseHelper::error($firstError, $validator->errors(), 422);
+        }
+
+        $booking = Booking::where('id', $request->id)->first();
+
+        $cancel = $booking->update([
+            'status' => 'cancelled-by-consultant',
+            'cancel_note' => $request->note,
+        ]);
+
+        return ResponseHelper::success('Session cancelled successfully', ['booking' => $booking]);
     }
 }
