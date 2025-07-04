@@ -536,7 +536,7 @@ class ConsultantController extends Controller
 
         $update = $booking->update([
             'status' => $request->type,
-            'note' => $request->note, // Optional note
+            'consultant_note' => $request->note, // Optional note
             'channel' => $request->channel, // Optional channel
             'booking_link' => $request->link, // Optional link
         ]);
@@ -584,5 +584,54 @@ class ConsultantController extends Controller
         ]);
 
         return ResponseHelper::success('Session cancelled successfully', ['booking' => $booking]);
+    }
+
+    public function rescheduleSessionConsultant(Request $request) {
+        $validator = Validator::make($request->all(), [
+            'id' => 'required|exists:bookings,id',
+            'type' => 'required|string',
+            'date' => 'required|string',
+            'start_time' => 'required|string',
+            'note' => 'required|string',
+        ]);
+
+        if ($validator->fails()) {
+            $firstError = $validator->errors()->first();
+            return ResponseHelper::error($firstError, $validator->errors(), 422);
+        }
+
+        $booking = Booking::where('id', $request->id)->first();
+        $consultantId = $booking->consultant_id;
+        $duration = (int) $booking->duration;
+
+        $start = Carbon::createFromFormat('Y-m-d g:i A', $request->date . ' ' . $request->start_time);
+        $end = $start->copy()->addMinutes($duration);
+
+        $hasConflict = DB::table('bookings')
+        ->where('consultant_id', $consultantId)
+        ->where('consultant_date', $request->date)
+        ->whereNotIn('status', ['cancelled-by-user', 'cancelled-by-consultant'])
+        ->where(function ($query) use ($start, $end) {
+            $query->whereRaw("STR_TO_DATE(CONCAT(date, ' ', start_time), '%Y-%m-%d %h:%i %p') BETWEEN ? AND ?", [$start, $end])
+                ->orWhereRaw("STR_TO_DATE(CONCAT(date, ' ', end_time), '%Y-%m-%d %h:%i %p') BETWEEN ? AND ?", [$start, $end])
+                ->orWhere(function ($query) use ($start, $end) {
+                    $query->whereRaw("STR_TO_DATE(CONCAT(date, ' ', start_time), '%Y-%m-%d %h:%i %p') <= ?", [$start])
+                            ->whereRaw("STR_TO_DATE(CONCAT(date, ' ', end_time), '%Y-%m-%d %h:%i %p') >= ?", [$end]);
+                });
+        })
+        ->exists();
+
+        if ($hasConflict) {
+            return ResponseHelper::error('This time slot is already booked. Please choose another time.', [], 422);
+        }
+
+        $cancel = $booking->update([
+            'status' => 'rescheduled-by-consultant',
+            'reschedule_date' => $request->date,
+            'reschedule_time' => $start->format('h:i A'),
+            'reschedule_note' => $request->note,
+        ]);
+
+        return ResponseHelper::success('Request sent successfully', ['booking' => $booking]);
     }
 }

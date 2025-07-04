@@ -81,6 +81,8 @@ Route::prefix('v1')->group(function () {
 
         Route::post('/cancel-session-user', [ConsultantController::class, 'cancelSessionUser']);
         Route::post('/cancel-session-consultant', [ConsultantController::class, 'cancelSessionConsultant']);
+
+        Route::post('/reschedule-session-consultant', [ConsultantController::class, 'rescheduleSessionConsultant']);
     });
 
     // Utilities
