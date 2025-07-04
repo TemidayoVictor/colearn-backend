@@ -391,6 +391,7 @@ class ConsultantController extends Controller
         $hasConflict = DB::table('bookings')
         ->where('consultant_id', $request->consultantId)
         ->where('consultant_date', $request->consultant_date)
+        ->whereNotIn('status', ['cancelled-by-user', 'cancelled-by-consultant'])
         ->where(function ($query) use ($start, $end) {
             $query->whereRaw("STR_TO_DATE(CONCAT(date, ' ', start_time), '%Y-%m-%d %h:%i %p') BETWEEN ? AND ?", [$start, $end])
                 ->orWhereRaw("STR_TO_DATE(CONCAT(date, ' ', end_time), '%Y-%m-%d %h:%i %p') BETWEEN ? AND ?", [$start, $end])
@@ -409,7 +410,7 @@ class ConsultantController extends Controller
         $ratePerMinute = $consultant->rate / 60;
         $amountToPay = $ratePerMinute * $request->duration;
 
-        $formattedDate = Carbon::parse($request->date)->format('l, M j Y');
+        $formattedDate = Carbon::parse($request->date)->format('l, M j, Y');
 
         $booking = Booking::create([
             'consultant_id' => $request->consultantId,
@@ -460,6 +461,7 @@ class ConsultantController extends Controller
         $hasConflict = DB::table('bookings')
         ->where('consultant_id', $consultantId)
         ->where('consultant_date', $request->consultant_date)
+        ->whereNotIn('status', ['cancelled-by-user', 'cancelled-by-consultant'])
         ->where(function ($query) use ($start, $end) {
             $query->whereRaw("STR_TO_DATE(CONCAT(date, ' ', start_time), '%Y-%m-%d %h:%i %p') BETWEEN ? AND ?", [$start, $end])
                 ->orWhereRaw("STR_TO_DATE(CONCAT(date, ' ', end_time), '%Y-%m-%d %h:%i %p') BETWEEN ? AND ?", [$start, $end])
@@ -474,7 +476,7 @@ class ConsultantController extends Controller
             return ResponseHelper::error('This time slot is already booked. Please choose another time.', [], 422);
         }
 
-        $formattedDate = Carbon::parse($request->date)->format('l, M j Y');
+        $formattedDate = Carbon::parse($request->date)->format('l, M j, Y');
 
         $update = $booking->update([
             'date' => $request->date,
