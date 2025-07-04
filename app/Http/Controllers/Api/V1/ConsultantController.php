@@ -361,6 +361,25 @@ class ConsultantController extends Controller
 
     }
 
+    public function getSessionsConsultant(Request $request) {
+        $validator = Validator::make($request->all(), [
+            'consultantId' => 'required|exists:consultants,id',
+        ]);
+
+        if ($validator->fails()) {
+            $firstError = $validator->errors()->first();
+            return ResponseHelper::error($firstError, $validator->errors(), 422);
+        }
+
+        $consultant = Consultant::where('id', $request->consultantId)->first();
+        $bookings = Booking::where('consultant_id', $request->consultantId)
+            ->with(['user'])
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        return ResponseHelper::success('Sessions fetched successfully', ['bookings' => $bookings]);
+    }
+
     public function bookSession(Request $request) {
 
         $validator = Validator::make($request->all(), [

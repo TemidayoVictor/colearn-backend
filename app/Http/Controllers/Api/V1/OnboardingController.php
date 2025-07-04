@@ -183,6 +183,7 @@ class OnboardingController extends Controller
         $user->country_phone_code = $request->country_phone_code;
         $user->country_iso = $request->country_iso;
         $user->country_iso3 = $request->country_iso3;
+        $user->profile_photo = $path;
         $user->save();
 
         return ResponseHelper::success('Details Updated Successfully', ['user' => $user, $userTypeFetch => $userType]);

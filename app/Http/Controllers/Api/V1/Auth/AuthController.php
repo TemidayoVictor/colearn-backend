@@ -41,7 +41,6 @@ class AuthController extends Controller
         if ($position && $position->countryCode) {
             $timezone = TimezoneHelper::mapCountryToTimezone($position->countryCode);
 
-            // Optionally, save to user or consultant profile
             Auth::user()->update(['timezone' => $timezone]);
         }
 
