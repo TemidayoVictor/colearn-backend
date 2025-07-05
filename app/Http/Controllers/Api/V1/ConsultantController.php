@@ -593,6 +593,8 @@ class ConsultantController extends Controller
             'date' => 'required|string',
             'start_time' => 'required|string',
             'note' => 'required|string',
+            'user_time' => 'required',
+            'user_date' => 'required',
         ]);
 
         if ($validator->fails()) {
@@ -625,13 +627,47 @@ class ConsultantController extends Controller
             return ResponseHelper::error('This time slot is already booked. Please choose another time.', [], 422);
         }
 
-        $cancel = $booking->update([
+        $reschedule = $booking->update([
             'status' => 'rescheduled-by-consultant',
             'reschedule_date' => $request->date,
             'reschedule_time' => $start->format('h:i A'),
             'reschedule_note' => $request->note,
+            'reschedule_date_user' => $request->user_date,
+            'reschedule_time_user' => $request->user_time,
         ]);
 
         return ResponseHelper::success('Request sent successfully', ['booking' => $booking]);
+    }
+
+    public function approveReschedule (Request $request) {
+        $validator = Validator::make($request->all(), [
+            'id' => 'required|exists:bookings,id',
+        ]);
+
+        if ($validator->fails()) {
+            $firstError = $validator->errors()->first();
+            return ResponseHelper::error($firstError, $validator->errors(), 422);
+        }
+
+        $booking = Booking::where('id', $request->id)->first();
+
+        $start = Carbon::createFromFormat('Y-m-d g:i A', $booking->reschedule_date . ' ' . $booking->reschedule_time);
+        $end = $start->copy()->addMinutes($booking->duration);
+
+        $userStart = Carbon::createFromFormat('Y-m-d g:i A', $booking->reschedule_date_user . ' ' . $booking->reschedule_time_user);
+        $userEnd = $userStart->copy()->addMinutes($booking->duration);
+
+        $booking = Booking::create([
+            'date' => $booking->reschedule_date,
+            'start_time' => $start->format('h:i A'),
+            'end_time' => $end->format('h:i A'),
+            'status' => 'approved',
+            'note' => $request->reschedule_note, // Optional note
+            'user_time' => $userStart->format('h:i A'),
+            'user_end_time' => $userEnd->format('h:i A'),
+            'consultant_date' => $request->consultant_date,
+        ]);
+
+        return ResponseHelper::success('Session appproved successfully', ['booking' => $booking]);
     }
 }
