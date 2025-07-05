@@ -357,7 +357,9 @@ class ConsultantController extends Controller
             ->orderBy('created_at', 'desc')
             ->get();
 
-        return ResponseHelper::success('Sessions fetched successfully', ['bookings' => $bookings]);
+        $consultants = Consultant::where('status', 'Active')->with('instructor.user')->get();
+
+        return ResponseHelper::success('Sessions fetched successfully', ['bookings' => $bookings, 'consultants' => $consultants]);
 
     }
 
@@ -657,15 +659,18 @@ class ConsultantController extends Controller
         $userStart = Carbon::createFromFormat('Y-m-d g:i A', $booking->reschedule_date_user . ' ' . $booking->reschedule_time_user);
         $userEnd = $userStart->copy()->addMinutes($booking->duration);
 
-        $booking = Booking::create([
+        $formattedDate = Carbon::parse($booking->reschedule_date_user)->format('l, M j, Y');
+        $consultantDate = Carbon::parse($booking->reschedule_date)->format('l, M j, Y');
+
+        $update = $booking->update([
             'date' => $booking->reschedule_date,
             'start_time' => $start->format('h:i A'),
             'end_time' => $end->format('h:i A'),
             'status' => 'approved',
-            'note' => $request->reschedule_note, // Optional note
+            'date_string' => $formattedDate,
             'user_time' => $userStart->format('h:i A'),
             'user_end_time' => $userEnd->format('h:i A'),
-            'consultant_date' => $request->consultant_date,
+            'consultant_date' => $consultantDate,
         ]);
 
         return ResponseHelper::success('Session appproved successfully', ['booking' => $booking]);
