@@ -428,7 +428,7 @@ class ConsultantController extends Controller
         }
 
         // Convert rate from per hour to per minute
-        $ratePerMinute = $consultant->rate / 60;
+        $ratePerMinute = $consultant->hourly_rate / 60;
         $amountToPay = $ratePerMinute * $request->duration;
 
         $formattedDate = Carbon::parse($request->date)->format('l, M j, Y');
@@ -461,6 +461,7 @@ class ConsultantController extends Controller
             'note' => 'nullable',
             'user_start_time' => 'required',
             'consultant_date' => 'required',
+            'userId' => 'required|exists:users,id',
         ]);
 
         if ($validator->fails()) {
@@ -470,6 +471,7 @@ class ConsultantController extends Controller
 
         $booking = Booking::where('id', $request->id)->first();
         $consultantId = $booking->consultant_id;
+        $consultant = Consultant::where('id', $consultantId)->first();
 
         $duration = (int) $request->duration;
 
@@ -482,6 +484,8 @@ class ConsultantController extends Controller
         $hasConflict = DB::table('bookings')
         ->where('consultant_id', $consultantId)
         ->where('consultant_date', $request->consultant_date)
+        ->where('user_id', '!=', $request->userId)
+        ->where('id', '!=', $request->id)
         ->whereNotIn('status', ['cancelled-by-user', 'cancelled-by-consultant'])
         ->where(function ($query) use ($start, $end) {
             $query->whereRaw("STR_TO_DATE(CONCAT(date, ' ', start_time), '%Y-%m-%d %h:%i %p') BETWEEN ? AND ?", [$start, $end])
@@ -497,6 +501,10 @@ class ConsultantController extends Controller
             return ResponseHelper::error('This time slot is already booked. Please choose another time.', [], 422);
         }
 
+        // Convert rate from per hour to per minute
+        $ratePerMinute = $consultant->hourly_rate / 60;
+        $amountToPay = $ratePerMinute * $duration;
+
         $formattedDate = Carbon::parse($request->date)->format('l, M j, Y');
 
         $update = $booking->update([
@@ -505,6 +513,8 @@ class ConsultantController extends Controller
             'end_time' => $end->format('h:i A'),
             'duration' => $duration,
             'note' => $request->note, // Optional note
+            'amount' => $amountToPay,
+            'status' => 'rescheduled-by-user',
             'date_string' => $formattedDate,
             'user_time' => $userStart->format('h:i A'),
             'user_end_time' => $userEnd->format('h:i A'),
@@ -674,5 +684,45 @@ class ConsultantController extends Controller
         ]);
 
         return ResponseHelper::success('Session appproved successfully', ['booking' => $booking]);
+    }
+
+    public function updatePaymentStatus(Request $request) {
+        $validator = Validator::make($request->all(), [
+            'id' => 'required|exists:bookings,id',
+        ]);
+
+        if ($validator->fails()) {
+            $firstError = $validator->errors()->first();
+            return ResponseHelper::error($firstError, $validator->errors(), 422);
+        }
+
+        $booking = Booking::where('id', $request->id)->first();
+
+        $update = $booking->update([
+            'payment_status' => 'paid',
+        ]);
+
+        return ResponseHelper::success('Session updated successfully', ['booking' => $booking]);
+    }
+
+    public function updateSessionStatus(Request $request) {
+        $validator = Validator::make($request->all(), [
+            'id' => 'required|exists:bookings,id',
+            'status' => 'required|string',
+            'note' => 'nullable',
+        ]);
+
+        if ($validator->fails()) {
+            $firstError = $validator->errors()->first();
+            return ResponseHelper::error($firstError, $validator->errors(), 422);
+        }
+
+        $booking = Booking::where('id', $request->id)->first();
+
+        $update = $booking->update([
+            'status' => $request->status,
+        ]);
+
+        return ResponseHelper::success('Session updated successfully', ['booking' => $booking]);
     }
 }

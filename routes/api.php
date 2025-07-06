@@ -84,6 +84,9 @@ Route::prefix('v1')->group(function () {
 
         Route::post('/reschedule-session-consultant', [ConsultantController::class, 'rescheduleSessionConsultant']);
         Route::post('/approve-reschedule', [ConsultantController::class, 'approveReschedule']);
+
+        Route::post('/update-payment', [ConsultantController::class, 'updatePaymentStatus']);
+        Route::post('/update-session-status', [ConsultantController::class, 'updateSessionStatus']);
     });
 
     // Utilities
