@@ -719,9 +719,29 @@ class ConsultantController extends Controller
 
         $booking = Booking::where('id', $request->id)->first();
 
-        $update = $booking->update([
-            'status' => $request->status,
-        ]);
+        if(($request->status == 'missed_user' || $request->status == 'missed_consultant') && !$request->note) {
+            return ResponseHelper::error('Please add a reason why you want to mark session as missed', 422);
+        }
+
+        if($request->status == 'missed_user') {
+            $update = $booking->update([
+                'status' => $request->status,
+                'missed_client_note' => $request->note,
+            ]);
+        }
+
+        elseif($request->status == 'missed_consultant') {
+            $update = $booking->update([
+                'status' => $request->status,
+                'missed_consultant_note' => $request->note,
+            ]);
+        }
+
+        else {
+            $update = $booking->update([
+                'status' => $request->status,
+            ]);
+        }
 
         return ResponseHelper::success('Session updated successfully', ['booking' => $booking]);
     }
