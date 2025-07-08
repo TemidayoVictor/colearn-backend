@@ -375,7 +375,7 @@ class ConsultantController extends Controller
 
         $consultant = Consultant::where('id', $request->consultantId)->first();
         $bookings = Booking::where('consultant_id', $request->consultantId)
-            ->with(['user'])
+            ->with(['user', 'consultant.instructor.user'])
             ->orderBy('created_at', 'desc')
             ->get();
 
@@ -599,6 +599,7 @@ class ConsultantController extends Controller
     }
 
     public function rescheduleSessionConsultant(Request $request) {
+        Log::info($request);
         $validator = Validator::make($request->all(), [
             'id' => 'required|exists:bookings,id',
             'type' => 'required|string',
@@ -644,6 +645,7 @@ class ConsultantController extends Controller
             'reschedule_date' => $request->date,
             'reschedule_time' => $start->format('h:i A'),
             'reschedule_note' => $request->note,
+            'consultant_note' => $request->note,
             'reschedule_date_user' => $request->user_date,
             'reschedule_time_user' => $request->user_time,
         ]);
@@ -727,6 +729,7 @@ class ConsultantController extends Controller
             $update = $booking->update([
                 'status' => $request->status,
                 'missed_client_note' => $request->note,
+                'missed_client' => true,
             ]);
         }
 
@@ -734,6 +737,23 @@ class ConsultantController extends Controller
             $update = $booking->update([
                 'status' => $request->status,
                 'missed_consultant_note' => $request->note,
+                'missed_consultant' => true,
+            ]);
+        }
+
+        elseif($request->status == 'completed_user') {
+            $update = $booking->update([
+                'status' => $request->status,
+                'missed_client_note' => $request->note,
+                'missed_client' => false,
+            ]);
+        }
+
+        elseif($request->status == 'completed_consultant') {
+            $update = $booking->update([
+                'status' => $request->status,
+                'missed_consultant_note' => $request->note,
+                'missed_consultant' => false,
             ]);
         }
 
