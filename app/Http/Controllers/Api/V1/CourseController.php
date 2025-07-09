@@ -758,7 +758,7 @@ class CourseController extends Controller
             return ResponseHelper::error($firstError, $validator->errors(), 422);
         }
 
-        $cart = Cart::where('user_id', $request->userId)->where('status', 'active')->with('user', 'course.instructor.user')->get();
+        $cart = Cart::where('user_id', $request->userId)->where('status', 'active')->with('user', 'course.instructor.user')->orderBy('id', 'desc')->get();
 
         return ResponseHelper::success('Cart fetched successfully', ['cart' => $cart]);
     }
