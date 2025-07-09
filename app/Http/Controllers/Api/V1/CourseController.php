@@ -22,8 +22,12 @@ use App\Models\Category;
 class CourseController extends Controller
 {
     //Course functions
-
     public function allCourses(Request $request) {
+        $courses = Course::with('instructor.user')->inRandomOrder()->take(18)->get();
+        return ResponseHelper::success('Courses fetched successfully', ['courses' => $courses]);
+    }
+
+    public function allInstructorsCourses(Request $request) {
         $validator = Validator::make($request->all(), [
             'instructorId' => 'required|exists:instructors,id',
         ]);

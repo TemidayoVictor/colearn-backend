@@ -28,9 +28,11 @@ Route::prefix('v1')->group(function () {
         // Instructor Authenticated Route
 
         // Courses
+        Route::get('/all-courses', [CourseController::class, 'allCourses']);
+
         Route::post('/upload-course', [CourseController::class, 'uploadCourse']);
         Route::post('/edit-course', [CourseController::class, 'editCourse']);
-        Route::post('/all-courses', [CourseController::class, 'allCourses']);
+        Route::post('/all-instructors-courses', [CourseController::class, 'allInstructorsCourses']);
         Route::post('/get-course-details', [CourseController::class, 'getCourse']);
         Route::post('/get-course-details-edit', [CourseController::class, 'getCourseEdit']);
         Route::post('/delete-course', [CourseController::class, 'deleteCourse']);
