@@ -48,11 +48,13 @@ class CourseController extends Controller
             'title' => 'required|string',
             'description' => 'required|string',
             'who_can_enroll' => 'required|string',
-            'price' => 'nullable|integer',
+            'price' => 'nullable',
             'is_free' => 'string',
             'categories' => 'required|array',
             'categories.*' => 'string',
             'course_picture' => 'required|image|mimes:jpeg,png,jpg|max:2048',
+            'total_duration' => 'required',
+            'level' => 'required',
         ]);
 
         if ($validator->fails()) {
@@ -86,6 +88,8 @@ class CourseController extends Controller
             'price' => $checkFree ? null : $request->price,
             'thumbnail' => $path,
             'is_free' => $checkFree,
+            'total_duration' => $request->total_duration,
+            'level' => $request->level,
         ]);
 
         $categories = $request->categories;
@@ -106,11 +110,13 @@ class CourseController extends Controller
             'title' => 'required|string',
             'description' => 'required|string',
             'who_can_enroll' => 'required|string',
-            'price' => 'nullable|integer',
+            'price' => 'nullable',
             'is_free' => 'string',
             'categories' => 'required|array',
             'categories.*' => 'string',
             'course_picture' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+            'total_duration' => 'required',
+            'level' => 'required',
         ]);
 
         Log::info($request);
@@ -146,6 +152,8 @@ class CourseController extends Controller
         $course->price = $request->price;
         $course->is_free = $checkFree;
         $course->thumbnail = $path;
+        $course->total_duration = $request->total_duration;
+        $course->level = $request->level;
         $course->save();
 
         // fetch and delete all previous categories
