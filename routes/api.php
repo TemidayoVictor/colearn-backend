@@ -54,6 +54,9 @@ Route::prefix('v1')->group(function () {
         Route::post('/delete-resource', [CourseController::class, 'deleteResource']);
 
         // Publish Course
+        Route::post('/add-to-cart', [CourseController::class, 'addToCart']);
+
+        // cart
         Route::post('/publish-resource', [CourseController::class, 'publishCourse']);
 
         // Consultant

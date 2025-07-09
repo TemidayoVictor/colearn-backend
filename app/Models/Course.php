@@ -18,6 +18,8 @@ class Course extends Model
         'price',
         'is_free',
         'videos',
+        'total_duration',
+        'level',
     ];
 
     public function instructor()

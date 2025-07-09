@@ -18,6 +18,7 @@ use App\Models\CoursesVideo;
 use App\Models\CoursesResource;
 use App\Models\Instructor;
 use App\Models\Category;
+use App\Models\Cart;
 
 class CourseController extends Controller
 {
@@ -704,5 +705,32 @@ class CourseController extends Controller
         $course->is_published = true;
         $course->save();
         return ResponseHelper::success('Course published successfully');
+    }
+
+    public function addToCart(Request $request) {
+        $validator = Validator::make($request->all(), [
+            'userId' => 'required|exists:users,id',
+            'courseId' => 'required|exists:courses,id',
+        ]);
+
+        if ($validator->fails()) {
+            $firstError = $validator->errors()->first();
+            return ResponseHelper::error($firstError, $validator->errors(), 422);
+        }
+
+        $checkCart = Cart::where('user_id', $request->userId)->where('course_id', $request->courseId)->first();
+
+        if($checkCart) {
+            return ResponseHelper::success('Course already added to cart');
+        }
+
+        $cart = Cart::create([
+            'user_id' => $request->userId,
+            'course_id' => $request->courseId,
+            'status' => 'active',
+        ]);
+
+        return ResponseHelper::success('Course added to cart successfully', ['cart' => $cart]);
+
     }
 }
