@@ -54,10 +54,12 @@ Route::prefix('v1')->group(function () {
         Route::post('/delete-resource', [CourseController::class, 'deleteResource']);
 
         // Publish Course
-        Route::post('/add-to-cart', [CourseController::class, 'addToCart']);
+        Route::post('/publish-resource', [CourseController::class, 'publishCourse']);
 
         // cart
-        Route::post('/publish-resource', [CourseController::class, 'publishCourse']);
+        Route::post('/get-cart', [CourseController::class, 'getCart']);
+        Route::post('/add-to-cart', [CourseController::class, 'addToCart']);
+        Route::post('/remove-from-cart', [CourseController::class, 'removeFromCart']);
 
         // Consultant
         Route::post('/submit-schools', [ConsultantController::class, 'submitSchools']);

@@ -729,7 +729,13 @@ class CourseController extends Controller
         $checkCart = Cart::where('user_id', $request->userId)->where('course_id', $request->courseId)->first();
 
         if($checkCart) {
-            return ResponseHelper::success('Course already added to cart');
+            if($checkCart->status == 'active') {
+                return ResponseHelper::success('Course already added to cart');
+            }
+
+            elseif($checkCart->status == 'checked_out') {
+                return ResponseHelper::success('You have already purchased this course');
+            }
         }
 
         $cart = Cart::create([
@@ -740,5 +746,36 @@ class CourseController extends Controller
 
         return ResponseHelper::success('Course added to cart successfully', ['cart' => $cart]);
 
+    }
+
+    public function getCart(Request $request) {
+        $validator = Validator::make($request->all(), [
+            'userId' => 'required|exists:users,id',
+        ]);
+
+        if ($validator->fails()) {
+            $firstError = $validator->errors()->first();
+            return ResponseHelper::error($firstError, $validator->errors(), 422);
+        }
+
+        $cart = Cart::where('user_id', $request->userId)->where('status', 'active')->with('user', 'course.instructor.user')->get();
+
+        return ResponseHelper::success('Cart fetched successfully', ['cart' => $cart]);
+    }
+
+    public function removeFromCart(Request $request) {
+        $validator = Validator::make($request->all(), [
+            'id' => 'required|exists:cart,id',
+        ]);
+
+        if ($validator->fails()) {
+            $firstError = $validator->errors()->first();
+            return ResponseHelper::error($firstError, $validator->errors(), 422);
+        }
+
+        $cart = Cart::where('id', $request->id)->where('status', 'active')->first();
+        $cart->delete();
+
+        return ResponseHelper::success('Course removed successfully');
     }
 }
