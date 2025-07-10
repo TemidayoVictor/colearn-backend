@@ -13,6 +13,8 @@ class Cart extends Model
         'user_id',
         'course_id',
         'status',
+        'coupon_id',
+        'coupon_status',
     ];
 
     public function user()
@@ -23,5 +25,10 @@ class Cart extends Model
     public function course()
     {
         return $this->belongsTo(Course::class);
+    }
+
+    public function coupon()
+    {
+        return $this->belongsTo(Coupon::class);
     }
 }

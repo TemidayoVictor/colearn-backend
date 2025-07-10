@@ -64,6 +64,8 @@ Route::prefix('v1')->group(function () {
         // coupon
         Route::post('/add-coupon-to-course', [CourseController::class, 'addCoupon']);
         Route::post('/create-coupon', [CourseController::class, 'createCoupon']);
+        Route::post('/get-coupons', [CourseController::class, 'getCoupons']);
+        Route::post('/delete-coupon', [CourseController::class, 'deleteCoupon']);
 
         // Consultant
         Route::post('/submit-schools', [ConsultantController::class, 'submitSchools']);

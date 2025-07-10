@@ -781,6 +781,20 @@ class CourseController extends Controller
         return ResponseHelper::success('Course removed successfully');
     }
 
+    public function getCoupons(Request $request) {
+        $validator = Validator::make($request->all(), [
+            'id' => 'required|exists:instructors,id',
+        ]);
+
+        if ($validator->fails()) {
+            $firstError = $validator->errors()->first();
+            return ResponseHelper::error($firstError, $validator->errors(), 422);
+        }
+
+        $coupons = Coupon::where('instructor_id', $request->id)->orderBy('id', 'desc')->get();
+        return ResponseHelper::success('Coupons fetched successfully', ['coupons' => $coupons]);
+    }
+
     public function addCoupon(Request $request) {
         $validator = Validator::make($request->all(), [
             'code' => 'required|exists:coupons,code',
@@ -798,8 +812,16 @@ class CourseController extends Controller
             return ResponseHelper::error('Invalid / Expired coupon code');
         }
 
+        $couponInstructor = $coupon->instructor_id;
+
         $cart = Cart::where('id', $request->id)->with('course')->first();
         $coursePrice = $cart->course->price;
+
+        $courseInstructor = $cart->course->instructor_id;
+
+        if($couponInstructor != $courseInstructor) {
+            return ResponseHelper::error('This coupon is not valid for this course.');
+        }
 
         $discount = 0;
 
@@ -814,6 +836,8 @@ class CourseController extends Controller
         // After successful purchase do . . .
         // $coupon->increment('used_count');
 
+        return ResponseHelper::success('Coupons added successfully', ['finalPrice' => $finalPrice]);
+
     }
 
     public function createCoupon(Request $request) {
@@ -821,9 +845,10 @@ class CourseController extends Controller
             'code' => 'nullable|string|unique:coupons,code',
             'type' => 'required|in:fixed,percent',
             'value' => 'required|numeric|min:0.01',
-            'course_id' => 'nullable|exists:courses,id',
             'usage_limit' => 'nullable|integer|min:1',
             'expires_at' => 'nullable|date|after:today',
+            'instructorId' => 'required',
+            'amount' => 'nullable',
         ]);
 
         if ($validator->fails()) {
@@ -840,21 +865,43 @@ class CourseController extends Controller
             $code = $request->code;
         }
 
-        $course = Course::with('instructors')->where('id', $request->course_id)->first();
-        $instructorId = $course->instructor_id;
+        if(!$request->usage_limit) {
+            $limit = 1;
+        }
+
+        else {
+            $limit = $request->usage_limit;
+        }
 
         $coupon = Coupon::create([
             'code' => $code,
             'type' => $request->type,
             'value' => $request->value,
-            'instructor_id' => $instructorId,
-            'course_id' => $request->course_id,
-            'usage_limit' => $request->usage_limit,
+            'instructor_id' => $request->instructorId,
+            'usage_limit' => $limit,
             'expires_at' => $request->expires_at,
             'status' => 'Valid',
         ]);
 
-        return ResponseHelper::success('Coupon created successfully', ['coupon', $coupon]);
+        if($request->amount && $request->amount > 1) {
+            // request to create more than one coupon. We'll create amount - 1 coupons, because one has already been created
+            $amount = $request->amount - 1;
+            for ($i = 0; $i < $amount; $i++) {
+                $code = strtoupper(Str::random(6));
+
+                $coupon = Coupon::create([
+                    'code' => $code,
+                    'type' => $request->type,
+                    'value' => $request->value,
+                    'instructor_id' => $request->instructorId,
+                    'usage_limit' => $limit,
+                    'expires_at' => $request->expires_at,
+                    'status' => 'Valid',
+                ]);
+            }
+        }
+
+        return ResponseHelper::success('Coupon created successfully');
 
     }
 
