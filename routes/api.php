@@ -70,6 +70,9 @@ Route::prefix('v1')->group(function () {
         // checkout
         Route::post('/checkout-calculate', [CourseController::class, 'checkoutCalculate']);
 
+        // enroll
+        Route::post('/enroll', [CourseController::class, 'enroll']);
+
         // Consultant
         Route::post('/submit-schools', [ConsultantController::class, 'submitSchools']);
         Route::post('/edit-schools', [ConsultantController::class, 'editSchools']);

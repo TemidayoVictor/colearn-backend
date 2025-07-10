@@ -15,6 +15,7 @@ class Cart extends Model
         'status',
         'coupon_id',
         'coupon_status',
+        'purchase_price',
     ];
 
     public function user()

@@ -21,6 +21,7 @@ use App\Models\Instructor;
 use App\Models\Category;
 use App\Models\Cart;
 use App\Models\Coupon;
+use App\Models\Enrollment;
 
 class CourseController extends Controller
 {
@@ -823,19 +824,6 @@ class CourseController extends Controller
             return ResponseHelper::error('This coupon is not valid for this course.');
         }
 
-        // $discount = 0;
-
-        // if ($coupon->type === 'fixed') {
-        //     $discount = $coupon->value;
-        // } elseif ($coupon->type === 'percent') {
-        //     $discount = ($coupon->value / 100) * $coursePrice;
-        // }
-
-        // $finalPrice = max(0, $coursePrice - $discount);
-
-        // After successful purchase do . . .
-        // $coupon->increment('used_count');
-
         $update = $cart->update([
             'coupon_id' => $coupon->id,
             'coupon_status' => 'pending',
@@ -996,6 +984,7 @@ class CourseController extends Controller
         }
 
         $allCart = $request->cart;
+        $userId = $request->id;
 
         foreach ($allCart as $data) {
             $cartId = $data['id'];
@@ -1006,6 +995,23 @@ class CourseController extends Controller
             if (!$cart || !$cart->course || $cart->user_id != $request->id) {
                 continue; // skip invalid or incomplete items
             }
+
+            if ($cart->coupon) {
+                $coupon = $cart->coupon;
+                $coupon->increment('used_count');
+            }
+
+            $cart->coupon_status = 'completed';
+            $cart->status = 'checked_out';
+            $cart->save();
+
+            $enrollment = Enrollment::create([
+                'user_id' => $userId,
+                'course_id' => $cart->course->id,
+            ]);
         }
+
+        return ResponseHelper::success('Course enrollment successful');
+
     }
 }
