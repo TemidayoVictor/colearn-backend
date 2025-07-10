@@ -61,6 +61,10 @@ Route::prefix('v1')->group(function () {
         Route::post('/add-to-cart', [CourseController::class, 'addToCart']);
         Route::post('/remove-from-cart', [CourseController::class, 'removeFromCart']);
 
+        // coupon
+        Route::post('/add-coupon-to-course', [CourseController::class, 'addCoupon']);
+        Route::post('/create-coupon', [CourseController::class, 'createCoupon']);
+
         // Consultant
         Route::post('/submit-schools', [ConsultantController::class, 'submitSchools']);
         Route::post('/edit-schools', [ConsultantController::class, 'editSchools']);

@@ -9,6 +9,7 @@ use App\Helpers\ModelHelper;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 use App\Models\User;
 use App\Models\Course;
@@ -19,6 +20,7 @@ use App\Models\CoursesResource;
 use App\Models\Instructor;
 use App\Models\Category;
 use App\Models\Cart;
+use App\Models\Coupon;
 
 class CourseController extends Controller
 {
@@ -777,5 +779,101 @@ class CourseController extends Controller
         $cart->delete();
 
         return ResponseHelper::success('Course removed successfully');
+    }
+
+    public function addCoupon(Request $request) {
+        $validator = Validator::make($request->all(), [
+            'code' => 'required|exists:coupons,code',
+            'id' => 'required|exists:cart,id',
+        ]);
+
+        if ($validator->fails()) {
+            $firstError = $validator->errors()->first();
+            return ResponseHelper::error($firstError, $validator->errors(), 422);
+        }
+
+        $coupon = Coupon::where('code', $request->code)->first();
+
+        if(!$coupon || !$coupon->isValid()) {
+            return ResponseHelper::error('Invalid / Expired coupon code');
+        }
+
+        $cart = Cart::where('id', $request->id)->with('course')->first();
+        $coursePrice = $cart->course->price;
+
+        $discount = 0;
+
+        if ($coupon->type === 'fixed') {
+            $discount = $coupon->value;
+        } elseif ($coupon->type === 'percent') {
+            $discount = ($coupon->value / 100) * $coursePrice;
+        }
+
+        $finalPrice = max(0, $coursePrice - $discount);
+
+        // After successful purchase do . . .
+        // $coupon->increment('used_count');
+
+    }
+
+    public function createCoupon(Request $request) {
+        $validator = Validator::make($request->all(), [
+            'code' => 'nullable|string|unique:coupons,code',
+            'type' => 'required|in:fixed,percent',
+            'value' => 'required|numeric|min:0.01',
+            'course_id' => 'nullable|exists:courses,id',
+            'usage_limit' => 'nullable|integer|min:1',
+            'expires_at' => 'nullable|date|after:today',
+        ]);
+
+        if ($validator->fails()) {
+            $firstError = $validator->errors()->first();
+            return ResponseHelper::error($firstError, $validator->errors(), 422);
+        }
+
+        // If user did not add code, generate code
+        if(!$request->code) {
+            $code = strtoupper(Str::random(6));
+        }
+
+        else {
+            $code = $request->code;
+        }
+
+        $course = Course::with('instructors')->where('id', $request->course_id)->first();
+        $instructorId = $course->instructor_id;
+
+        $coupon = Coupon::create([
+            'code' => $code,
+            'type' => $request->type,
+            'value' => $request->value,
+            'instructor_id' => $instructorId,
+            'course_id' => $request->course_id,
+            'usage_limit' => $request->usage_limit,
+            'expires_at' => $request->expires_at,
+            'status' => 'Valid',
+        ]);
+
+        return ResponseHelper::success('Coupon created successfully', ['coupon', $coupon]);
+
+    }
+
+    public function deleteCoupon(Request $request) {
+        $validator = Validator::make($request->all(), [
+            'id' => 'required|string|exists:coupons,id',
+        ]);
+
+        if ($validator->fails()) {
+            $firstError = $validator->errors()->first();
+            return ResponseHelper::error($firstError, $validator->errors(), 422);
+        }
+
+        $coupon = Coupon::where('id', $request->id)->first();
+
+        if($coupon) {
+            $coupon->delete();
+        }
+
+        return ResponseHelper::success('Coupon deleted successfully');
     }
 }
