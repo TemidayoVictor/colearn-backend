@@ -760,7 +760,7 @@ class CourseController extends Controller
             return ResponseHelper::error($firstError, $validator->errors(), 422);
         }
 
-        $cart = Cart::where('user_id', $request->userId)->where('status', 'active')->with('user', 'course.instructor.user')->orderBy('id', 'desc')->get();
+        $cart = Cart::where('user_id', $request->userId)->where('status', 'active')->with('user', 'course.instructor.user', 'coupon')->orderBy('id', 'desc')->get();
 
         return ResponseHelper::success('Cart fetched successfully', ['cart' => $cart]);
     }
@@ -823,21 +823,25 @@ class CourseController extends Controller
             return ResponseHelper::error('This coupon is not valid for this course.');
         }
 
-        $discount = 0;
+        // $discount = 0;
 
-        if ($coupon->type === 'fixed') {
-            $discount = $coupon->value;
-        } elseif ($coupon->type === 'percent') {
-            $discount = ($coupon->value / 100) * $coursePrice;
-        }
+        // if ($coupon->type === 'fixed') {
+        //     $discount = $coupon->value;
+        // } elseif ($coupon->type === 'percent') {
+        //     $discount = ($coupon->value / 100) * $coursePrice;
+        // }
 
-        $finalPrice = max(0, $coursePrice - $discount);
+        // $finalPrice = max(0, $coursePrice - $discount);
 
         // After successful purchase do . . .
         // $coupon->increment('used_count');
 
-        return ResponseHelper::success('Coupons added successfully', ['finalPrice' => $finalPrice]);
+        $update = $cart->update([
+            'coupon_id' => $coupon->id,
+            'coupon_status' => 'pending',
+        ]);
 
+        return ResponseHelper::success('Coupon added successfully');
     }
 
     public function createCoupon(Request $request) {
@@ -922,5 +926,86 @@ class CourseController extends Controller
         }
 
         return ResponseHelper::success('Coupon deleted successfully');
+    }
+
+    public function checkoutCalculate(Request $request) {
+        $validator = Validator::make($request->all(), [
+            'id' => 'required|exists:users,id',
+            'cart' => 'required|array',
+        ]);
+
+        if ($validator->fails()) {
+            $firstError = $validator->errors()->first();
+            return ResponseHelper::error($firstError, $validator->errors(), 422);
+        }
+
+        $total = 0;
+        $allCart = $request->cart;
+
+        foreach ($allCart as $data) {
+            $cartId = $data['id'];
+
+            // Fetch cart with course and coupon
+            $cart = Cart::where('id', $cartId)->with('course', 'coupon')->first();
+
+            if (!$cart || !$cart->course || $cart->user_id != $request->id) {
+                continue; // skip invalid or incomplete items
+            }
+
+            $price = $cart->course->price;
+
+            // Handle coupon logic
+            if ($cart->coupon) {
+                if ($cart->coupon->isValid()) {
+                    $coupon = $cart->coupon;
+
+                    if ($coupon->type === 'percent') {
+                        $discount = ($price * $coupon->value) / 100;
+                        $price -= $discount;
+                    } elseif ($coupon->type === 'fixed') {
+                        $price -= $coupon->value;
+                    }
+
+                    if ($price < 0) {
+                        $price = 0;
+                    }
+
+                } else {
+                    // Coupon is invalid — remove it from the cart
+                    $cart->coupon_id = null;
+                    $cart->coupon_status = null;
+                    $cart->save();
+                }
+            }
+
+            $total += $price;
+        }
+
+        return ResponseHelper::success('Verification successful', ['total' => round($total, 2)]);
+    }
+
+    public function enroll(Request $request) {
+        $validator = Validator::make($request->all(), [
+            'id' => 'required|exists:users,id',
+            'cart' => 'required|array',
+        ]);
+
+        if ($validator->fails()) {
+            $firstError = $validator->errors()->first();
+            return ResponseHelper::error($firstError, $validator->errors(), 422);
+        }
+
+        $allCart = $request->cart;
+
+        foreach ($allCart as $data) {
+            $cartId = $data['id'];
+
+            // Fetch cart with course and coupon
+            $cart = Cart::where('id', $cartId)->with('course', 'coupon')->first();
+
+            if (!$cart || !$cart->course || $cart->user_id != $request->id) {
+                continue; // skip invalid or incomplete items
+            }
+        }
     }
 }

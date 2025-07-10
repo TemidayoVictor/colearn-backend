@@ -13,6 +13,8 @@ return new class extends Migration
     {
         Schema::table('cart', function (Blueprint $table) {
             //
+            $table->integer('coupon_id')->nullable();
+            $table->string('coupon_status')->nullable();
         });
     }
 
@@ -23,6 +25,8 @@ return new class extends Migration
     {
         Schema::table('cart', function (Blueprint $table) {
             //
+            $table->dropColumn('coupon_id');
+            $table->dropColumn('coupon_status');
         });
     }
 };

@@ -15,6 +15,10 @@ class Coupon extends Model
 
     protected $dates = ['expires_at'];
 
+    protected $casts = [
+        'expires_at' => 'datetime',
+    ];
+
     public function course()
     {
         return $this->belongsTo(Course::class);
