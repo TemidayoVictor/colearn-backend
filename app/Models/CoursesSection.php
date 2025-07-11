@@ -14,6 +14,7 @@ class CoursesSection extends Model
         'description',
         'order',
         'videos',
+        'status',
     ];
 
     public function course()

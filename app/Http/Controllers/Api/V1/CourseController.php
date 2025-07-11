@@ -23,6 +23,7 @@ use App\Models\Category;
 use App\Models\Cart;
 use App\Models\Coupon;
 use App\Models\Enrollment;
+use App\Models\VideoProgress;
 
 class CourseController extends Controller
 {
@@ -432,6 +433,9 @@ class CourseController extends Controller
             'video_url' => $path,
             'duration' => $request->duration,
             'order' => $order,
+            'overall_order' => $courseVideos + 1,
+            'status' => 'pending',
+            'progress' => '0',
         ]);
 
         // update the module and course videos count
@@ -466,6 +470,7 @@ class CourseController extends Controller
 
         $requestOrder = $request->order;
         $previousOrder = $video->order;
+        $previousOverallOrder = $video->overall_order;
 
         $path = $video->video_url;
         if ($request->hasFile('video')) {
@@ -485,10 +490,14 @@ class CourseController extends Controller
             $videoWithNewOrder = CoursesVideo::where('course_section_id', $request->moduleId)->where('order', $request->order)->first();
 
             if($videoWithNewOrder) {
+                $videoWithNewOrderOverallOrder = $videoWithNewOrder->overall_order;
+
                 $videoWithNewOrder->order = $previousOrder;
+                $videoWithNewOrder->overall_order = $previousOverallOrder;
                 $videoWithNewOrder->save();
 
                 $newOrder = $request->order;
+                $newOverallOrder = $videoWithNewOrderOverallOrder;
             }
 
             else {
@@ -504,6 +513,7 @@ class CourseController extends Controller
 
         else {
             $newOrder = $request->order;
+            $newOverallOrder = $previousOverallOrder;
         }
 
         // update module
@@ -511,6 +521,7 @@ class CourseController extends Controller
         $video->video_url = $path;
         $video->duration = $request->duration;
         $video->order = $newOrder;
+        $video->overall_order = $newOverallOrder;
         $video->save();
 
         return ResponseHelper::success('Video Updated successfully', ['video' => $video]);
@@ -557,6 +568,33 @@ class CourseController extends Controller
         $video->delete();
         return ResponseHelper::success('Resource deleted successfully');
 
+    }
+
+    public function videoProgress(Request $request) {
+        $validator = Validator::make($request->all(), [
+            'userId' => 'required|exists:users,id',
+            'videoId' => 'required|exists:course_videos,id',
+            'moduleId' => 'required|exists:course_sections,id',
+            'courseId' => 'required|exists:courses,id',
+        ]);
+
+        if ($validator->fails()) {
+            $firstError = $validator->errors()->first();
+            return ResponseHelper::error($firstError, $validator->errors(), 422);
+        }
+
+        $check = VideoProgress::where('user_id', $request->userId)
+        ->where('course_id', $request->courseId)
+        ->where('course_video_id', $request->videoId)
+        ->first();
+
+        if(!$check) {
+            $progress = VideoProgress::where([
+                'user_id' => $request->userId,
+                'course_id' => $request->courseId,
+                'course_video_id' => $request->videoId,
+            ]);
+        }
     }
 
     // Resource Functions

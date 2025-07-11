@@ -4,17 +4,14 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class VideoProgress extends Model
+class ModuleProgress extends Model
 {
     //
-    protected $table = "video_progress";
+    protected $table = "module_progress";
 
     protected $fillable = [
         'user_id',
-        'course_video_id',
-        'course_id',
-        'watched_percentage',
+        'course_section_id',
         'completed_at',
     ];
-
 }

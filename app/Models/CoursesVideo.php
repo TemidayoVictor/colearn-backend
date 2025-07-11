@@ -14,6 +14,9 @@ class CoursesVideo extends Model
         'video_url',
         'duration',
         'order',
+        'overall_order',
+        'status',
+        'progress',
     ];
 
     public function module()

@@ -13,7 +13,8 @@ return new class extends Migration
     {
         Schema::table('course_videos', function (Blueprint $table) {
             //
-            $table->integer('overall_order')->nullable();
+            $table->string('status')->nullable();
+            $table->string('progress')->nullable();
         });
     }
 
@@ -24,7 +25,8 @@ return new class extends Migration
     {
         Schema::table('course_videos', function (Blueprint $table) {
             //
-            $table->dropColumn('overall_order');
+            $table->dropColumn('status');
+            $table->dropColumn('progress');
         });
     }
 };

@@ -11,9 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('course_videos', function (Blueprint $table) {
+        Schema::table('course_sections', function (Blueprint $table) {
             //
-            $table->integer('overall_order')->nullable();
+            $table->string('status')->nullable();
         });
     }
 
@@ -22,9 +22,9 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('course_videos', function (Blueprint $table) {
+        Schema::table('course_sections', function (Blueprint $table) {
             //
-            $table->dropColumn('overall_order');
+            $table->dropColumn('status');
         });
     }
 };
