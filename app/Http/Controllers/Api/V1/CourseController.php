@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Carbon\Carbon;
 
 use App\Models\User;
 use App\Models\Course;
@@ -792,7 +793,7 @@ class CourseController extends Controller
             return ResponseHelper::error($firstError, $validator->errors(), 422);
         }
 
-        $coupons = Coupon::where('instructor_id', $request->id)->orderBy('id', 'desc')->get();
+        $coupons = Coupon::where('instructor_id', $request->id)->where('status', 'Valid')->orderBy('id', 'desc')->get();
         return ResponseHelper::success('Coupons fetched successfully', ['coupons' => $coupons]);
     }
 
@@ -811,6 +812,12 @@ class CourseController extends Controller
 
         if(!$coupon || !$coupon->isValid()) {
             return ResponseHelper::error('Invalid / Expired coupon code');
+        }
+
+        $couponCartCount = Cart::where('coupon_id', $coupon->id)->count();
+
+        if($couponCartCount >= $coupon->usage_limit) {
+            return ResponseHelper::error('Coupon code Limit reached');
         }
 
         $couponInstructor = $coupon->instructor_id;
@@ -910,7 +917,9 @@ class CourseController extends Controller
         $coupon = Coupon::where('id', $request->id)->first();
 
         if($coupon) {
-            $coupon->delete();
+            $coupon->status = 'Deleted';
+            $coupon->expires_at = Carbon::yesterday();
+            $coupon->save();
         }
 
         return ResponseHelper::success('Coupon deleted successfully');
@@ -996,13 +1005,27 @@ class CourseController extends Controller
                 continue; // skip invalid or incomplete items
             }
 
+            $price = $cart->course->price;
+
             if ($cart->coupon) {
                 $coupon = $cart->coupon;
                 $coupon->increment('used_count');
+
+                if ($coupon->type === 'percent') {
+                    $discount = ($price * $coupon->value) / 100;
+                    $price -= $discount;
+                } elseif ($coupon->type === 'fixed') {
+                    $price -= $coupon->value;
+                }
+
+                if ($price < 0) {
+                    $price = 0;
+                }
             }
 
             $cart->coupon_status = 'completed';
             $cart->status = 'checked_out';
+            $cart->purchase_price = $price;
             $cart->save();
 
             $enrollment = Enrollment::create([
@@ -1012,6 +1035,22 @@ class CourseController extends Controller
         }
 
         return ResponseHelper::success('Course enrollment successful');
+
+    }
+
+    public function enrolledCourses(Request $request) {
+        $validator = Validator::make($request->all(), [
+            'id' => 'required|exists:users,id',
+        ]);
+
+        if ($validator->fails()) {
+            $firstError = $validator->errors()->first();
+            return ResponseHelper::error($firstError, $validator->errors(), 422);
+        }
+
+        $courses = Enrollment::where('user_id', $request->id)->with('course.instructor.user', 'course.resources')->get();
+
+        return ResponseHelper::success('Courses fetched successfully', ['courses' => $courses]);
 
     }
 }

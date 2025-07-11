@@ -56,22 +56,23 @@ Route::prefix('v1')->group(function () {
         // Publish Course
         Route::post('/publish-resource', [CourseController::class, 'publishCourse']);
 
-        // cart
+        // Cart
         Route::post('/get-cart', [CourseController::class, 'getCart']);
         Route::post('/add-to-cart', [CourseController::class, 'addToCart']);
         Route::post('/remove-from-cart', [CourseController::class, 'removeFromCart']);
 
-        // coupon
+        // Coupon
         Route::post('/add-coupon', [CourseController::class, 'addCoupon']);
         Route::post('/create-coupon', [CourseController::class, 'createCoupon']);
         Route::post('/get-coupons', [CourseController::class, 'getCoupons']);
         Route::post('/delete-coupon', [CourseController::class, 'deleteCoupon']);
 
-        // checkout
+        // Checkout
         Route::post('/checkout-calculate', [CourseController::class, 'checkoutCalculate']);
 
-        // enroll
+        // Enroll
         Route::post('/enroll', [CourseController::class, 'enroll']);
+        Route::post('/enrolled-courses', [CourseController::class, 'enrolledCourses']);
 
         // Consultant
         Route::post('/submit-schools', [ConsultantController::class, 'submitSchools']);
