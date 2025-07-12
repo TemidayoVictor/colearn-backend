@@ -24,6 +24,7 @@ use App\Models\Cart;
 use App\Models\Coupon;
 use App\Models\Enrollment;
 use App\Models\VideoProgress;
+use App\Models\ModuleProgress;
 
 class CourseController extends Controller
 {
@@ -415,10 +416,10 @@ class CourseController extends Controller
 
         // get module to know number of videos under module and number of videos under course and increment.
         $module = CoursesSection::where('id', $request->moduleId)->first();
-        $moduleVideos = $module->videos;
+        $moduleVideos = $module->videos_count;
         $courseId = $module->course_id;
         $course = Course::where('id', $courseId)->first();
-        $courseVideos = $course->videos;
+        $courseVideos = $course->videos_count;
 
         // store video
         $path = null;
@@ -434,16 +435,24 @@ class CourseController extends Controller
             'duration' => $request->duration,
             'order' => $order,
             'overall_order' => $courseVideos + 1,
-            'status' => 'pending',
-            'progress' => '0',
         ]);
 
         // update the module and course videos count
-        $module->videos = $moduleVideos + 1;
+        $module->videos_count = $moduleVideos + 1;
         $module->save();
 
-        $course->videos = $courseVideos + 1;
+        $course->videos_count = $courseVideos + 1;
         $course->save();
+
+        // update the status of the module progress to incomplete
+        $allModuleProgresses = ModuleProgress::where('course_section_id', $request->moduleId)->get();
+        if($allModuleProgresses) {
+            foreach($allModuleProgresses as $progress) {
+                $progress->update([
+                    'completed_at' => null,
+                ]);
+            }
+        }
 
         return ResponseHelper::success('Video Uploaded successfully', ['video' => $video]);
 
@@ -570,11 +579,11 @@ class CourseController extends Controller
 
     }
 
-    public function videoProgress(Request $request) {
+    public function watchVideo(Request $request) {
+        Log::info($request);
         $validator = Validator::make($request->all(), [
             'userId' => 'required|exists:users,id',
             'videoId' => 'required|exists:course_videos,id',
-            'moduleId' => 'required|exists:course_sections,id',
             'courseId' => 'required|exists:courses,id',
         ]);
 
@@ -583,18 +592,103 @@ class CourseController extends Controller
             return ResponseHelper::error($firstError, $validator->errors(), 422);
         }
 
-        $check = VideoProgress::where('user_id', $request->userId)
+        $video = CoursesVideo::where('id', $request->videoId)->first();
+        $moduleId = $video->course_section_id;
+        $overallOrder = $video->overall_order;
+
+        $checkVideoProgress = VideoProgress::where('user_id', $request->userId)
         ->where('course_id', $request->courseId)
         ->where('course_video_id', $request->videoId)
         ->first();
 
-        if(!$check) {
-            $progress = VideoProgress::where([
+        if(!$checkVideoProgress) {
+            $progress = VideoProgress::create([
                 'user_id' => $request->userId,
                 'course_id' => $request->courseId,
                 'course_video_id' => $request->videoId,
             ]);
         }
+
+        $checkModuleProgress = ModuleProgress::where('user_id', $request->userId)
+        ->where('course_section_id', $moduleId)
+        ->first();
+
+        if(!$checkModuleProgress) {
+            $progress = ModuleProgress::create([
+                'user_id' => $request->userId,
+                'course_section_id' => $moduleId,
+            ]);
+        }
+
+        $courseId = (int) $request->courseId ?? 0;
+
+        $nextVideo = CoursesVideo::where('overall_order', '>', $overallOrder)
+        ->whereHas('module', function ($query) use ($courseId) {
+            $query->where('course_id', '=', $courseId);
+        })
+        ->orderBy('overall_order')
+        ->first();
+
+        $prevVideo = CoursesVideo::where('overall_order', '<', $overallOrder)
+        ->whereHas('module', function ($query) use ($courseId) {
+            $query->where('course_id', '=', $courseId);
+        })
+        ->orderByDesc('overall_order')
+        ->first();
+
+        return ResponseHelper::success('Progress updated successfully', ['video' => $video, 'nextVideo' => $nextVideo, 'prevVideo' => $prevVideo]);
+
+    }
+
+    public function markVideoAsComplete(Request $request) {
+        $validator = Validator::make($request->all(), [
+            'userId' => 'required|exists:users,id',
+            'videoId' => 'required|exists:course_videos,id',
+            'courseId' => 'required|exists:courses,id',
+        ]);
+
+        if ($validator->fails()) {
+            $firstError = $validator->errors()->first();
+            return ResponseHelper::error($firstError, $validator->errors(), 422);
+        }
+
+        $video = CoursesVideo::with('module')->findOrFail($request->videoId);
+        $moduleId = $video->course_section_id;
+
+        $checkVideo = VideoProgress::where('user_id', $request->userId)
+        ->where('course_id', $request->courseId)
+        ->where('course_video_id', $request->videoId)
+        ->first();
+
+        if($checkVideo) {
+            $update = $checkVideo->update([
+                'completed_at' => now(),
+                'watched_percentage' => 100,
+            ]);
+        }
+
+        $allVideoIds = CoursesVideo::where('course_section_id', $moduleId)->pluck('id');
+
+        $completedCount = VideoProgress::where('user_id', $userId)
+        ->whereIn('course_video_id', $allVideoIds)
+        ->whereNotNull('completed_at')
+        ->count();
+
+        if ($completedCount === $allVideoIds->count()) {
+            // module is completed
+            $checkModule =  ModuleProgress::where('user_id', $request->userId)
+            ->where('course_section_id', $moduleId)
+            ->first();
+
+            if($checkModule) {
+                $update = $checkModule->update([
+                    'completed_at' => now(),
+                ]);
+            }
+        }
+
+        return ResponseHelper::success('Video completed successfully');
+
     }
 
     // Resource Functions

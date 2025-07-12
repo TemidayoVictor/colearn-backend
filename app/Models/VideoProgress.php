@@ -17,4 +17,14 @@ class VideoProgress extends Model
         'completed_at',
     ];
 
+    public function video()
+    {
+        return $this->belongsTo(CoursesVideo::class, 'course_video_id');
+    }
+
+    public function course()
+    {
+        return $this->belongsTo(Course::class, 'course_id');
+    }
+
 }

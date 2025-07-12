@@ -28,4 +28,9 @@ class CoursesVideo extends Model
     {
         return $this->hasMany(CoursesResource::class, 'course_video_id');
     }
+
+    public function progresses()
+    {
+        return $this->hasMany(VideoProgress::class, 'course_video_id');
+    }
 }

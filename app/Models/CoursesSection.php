@@ -13,7 +13,7 @@ class CoursesSection extends Model
         'title',
         'description',
         'order',
-        'videos',
+        'videos_count',
         'status',
     ];
 

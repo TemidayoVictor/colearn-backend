@@ -74,6 +74,10 @@ Route::prefix('v1')->group(function () {
         Route::post('/enroll', [CourseController::class, 'enroll']);
         Route::post('/enrolled-courses', [CourseController::class, 'enrolledCourses']);
 
+        // Course progress
+        Route::post('/watch-video', [CourseController::class, 'watchVideo']);
+        Route::post('/mark-video-as-complete', [CourseController::class, 'markVideoAsComplete']);
+
         // Consultant
         Route::post('/submit-schools', [ConsultantController::class, 'submitSchools']);
         Route::post('/edit-schools', [ConsultantController::class, 'editSchools']);

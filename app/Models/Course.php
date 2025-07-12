@@ -17,7 +17,7 @@ class Course extends Model
         'is_published',
         'price',
         'is_free',
-        'videos',
+        'videos_count',
         'total_duration',
         'level',
     ];
