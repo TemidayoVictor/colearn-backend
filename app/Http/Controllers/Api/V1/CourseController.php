@@ -199,6 +199,8 @@ class CourseController extends Controller
             'modules.videos' => function ($query) {
                 $query->orderBy('order');
             },
+            'modules.progresses',
+            'modules.videos.progresses',
             'resources'
         ])->where('id', $request->courseId)->first();
 
@@ -669,7 +671,7 @@ class CourseController extends Controller
 
         $allVideoIds = CoursesVideo::where('course_section_id', $moduleId)->pluck('id');
 
-        $completedCount = VideoProgress::where('user_id', $userId)
+        $completedCount = VideoProgress::where('user_id', $request->userId)
         ->whereIn('course_video_id', $allVideoIds)
         ->whereNotNull('completed_at')
         ->count();

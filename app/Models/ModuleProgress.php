@@ -14,4 +14,16 @@ class ModuleProgress extends Model
         'course_section_id',
         'completed_at',
     ];
+
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
+
+    public function module()
+    {
+        return $this->belongsTo(CoursesSection::class, 'course_section_id');
+    }
+
+
 }

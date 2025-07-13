@@ -31,4 +31,9 @@ class CoursesSection extends Model
     {
         return $this->hasMany(CoursesResource::class, 'course_section_id');
     }
+
+    public function progresses()
+    {
+        return $this->hasMany(ModuleProgress::class, 'course_section_id');
+    }
 }
