@@ -1240,7 +1240,7 @@ class CourseController extends Controller
             return ResponseHelper::error($firstError, $validator->errors(), 422);
         }
 
-        $courses = Enrollment::where('user_id', $request->id)->with('course.instructor.user', 'course.resources')->get();
+        $courses = Enrollment::where('user_id', $request->id)->with('course.instructor.user', 'course.resources', 'review')->get();
 
         return ResponseHelper::success('Courses fetched successfully', ['courses' => $courses]);
 
@@ -1250,8 +1250,9 @@ class CourseController extends Controller
         $validator = Validator::make($request->all(), [
             'user_id' => 'required|exists:users,id',
             'course_id' => 'required|exists:courses,id',
+            'title' => 'required',
             'rating' => 'required|integer|min:1|max:5',
-            'review' => 'nullable|string|max:1000',
+            'review' => 'required|string|max:1000',
         ]);
 
         if ($validator->fails()) {
