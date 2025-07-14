@@ -25,6 +25,7 @@ use App\Models\Coupon;
 use App\Models\Enrollment;
 use App\Models\VideoProgress;
 use App\Models\ModuleProgress;
+use App\Models\Review;
 
 class CourseController extends Controller
 {
@@ -1240,7 +1241,18 @@ class CourseController extends Controller
             return ResponseHelper::error($firstError, $validator->errors(), 422);
         }
 
-        $courses = Enrollment::where('user_id', $request->id)->with('course.instructor.user', 'course.resources', 'review')->get();
+        $userId = $request->id;
+
+        $courses = Enrollment::where('user_id', $userId)
+        ->with(['course.instructor.user', 'course.resources'])
+        ->get();
+
+        $reviews = Review::where('user_id', $userId)->get()->keyBy('course_id');
+
+        // Attach each review manually
+        $courses->each(function ($enrollment) use ($reviews) {
+            $enrollment->review = $reviews->get($enrollment->course_id);
+        });
 
         return ResponseHelper::success('Courses fetched successfully', ['courses' => $courses]);
 
@@ -1272,7 +1284,7 @@ class CourseController extends Controller
         // Update if already reviewed
         $review = Review::updateOrCreate(
             ['user_id' => $request->user_id, 'course_id' => $request->course_id],
-            ['rating' => $request->rating, 'review' => $request->review]
+            ['rating' => $request->rating, 'review' => $request->review, 'title' => $request->title]
         );
 
         return ResponseHelper::success('Review submitted successfully.', ['review' => $review]);

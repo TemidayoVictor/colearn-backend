@@ -24,11 +24,9 @@ class Enrollment extends Model
         return $this->belongsTo(Course::class);
     }
 
-    public function review()
-    {
-        return $this->hasOne(Review::class, 'user_id', 'user_id')
-            ->where(function ($query) {
-                $query->where('course_id', $this->course_id);
-            });
-    }
+    // public function review()
+    // {
+    //     return $this->hasOne(Review::class, 'user_id', 'user_id')
+    //         ->whereColumn('reviews.course_id', 'enrollments.course_id');
+    // }
 }
