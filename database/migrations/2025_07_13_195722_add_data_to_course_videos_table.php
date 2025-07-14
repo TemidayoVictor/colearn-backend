@@ -11,9 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('enrollments', function (Blueprint $table) {
+        Schema::table('course_videos', function (Blueprint $table) {
             //
-            $table->timestamp('completed_at')->nullable();
+            $table->string('type')->nullable();
+            $table->text('body')->nullable();
         });
     }
 
@@ -22,9 +23,10 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('enrollments', function (Blueprint $table) {
+        Schema::table('course_videos', function (Blueprint $table) {
             //
-            $table->dropColumn('completed_at');
+            $table->dropColumn('type');
+            $table->dropColumn('body');
         });
     }
 };

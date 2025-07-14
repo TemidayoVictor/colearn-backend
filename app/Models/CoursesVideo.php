@@ -17,6 +17,8 @@ class CoursesVideo extends Model
         'overall_order',
         'status',
         'progress',
+        'type',
+        'body',
     ];
 
     public function module()

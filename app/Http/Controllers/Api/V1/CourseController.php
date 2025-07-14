@@ -403,7 +403,9 @@ class CourseController extends Controller
         $validator = Validator::make($request->all(), [
             'moduleId' => 'required|exists:course_sections,id',
             'title' => 'required|string',
-            'video' => 'required|file|mimes:mp4,mov,avi,webm,mkv|max:512000', // 500MB max
+            'video' => 'nullable|file|mimes:mp4,mov,avi,webm,mkv|max:512000', // 500MB max
+            'body' => 'nullable',
+            'type' => 'required',
             'duration' => 'required',
         ]);
 
@@ -423,8 +425,16 @@ class CourseController extends Controller
         $course = Course::where('id', $courseId)->first();
         $courseVideos = $course->videos_count;
 
+        if($request->type == 'video' && !$request->video) {
+            return ResponseHelper::error('Please add a video');
+        }
+
+        elseif($request->type == 'text' && !$request->body) {
+            return ResponseHelper::error('Please add a body to the content');
+        }
+
         // store video
-        $path = null;
+        $path = 'null';
         if ($request->hasFile('video')) {
             $path = $request->file('video')->store('uploads/lesson_videos', 'public');
         }
@@ -437,6 +447,8 @@ class CourseController extends Controller
             'duration' => $request->duration,
             'order' => $order,
             'overall_order' => $courseVideos + 1,
+            'type' => $request->type,
+            'body' => $request->body,
         ]);
 
         // update the module and course videos count
@@ -456,7 +468,17 @@ class CourseController extends Controller
             }
         }
 
-        return ResponseHelper::success('Video Uploaded successfully', ['video' => $video]);
+        // update the status of all the course enrollment progress
+        $allCourseEnrollments = Enrollment::where('course_id', $courseId)->get();
+        if($allCourseEnrollments) {
+            foreach($allCourseEnrollments as $progress) {
+                $progress->update([
+                    'completed_at' => null,
+                ]);
+            }
+        }
+
+        return ResponseHelper::success('Lecture Uploaded successfully', ['video' => $video]);
 
     }
 
@@ -469,6 +491,8 @@ class CourseController extends Controller
             'order' => 'required',
             'moduleId' => 'required|exists:course_sections,id',
             'videoId' => 'required|exists:course_videos,id',
+            'body' => 'nullable',
+            'type' => 'required',
         ]);
 
 
@@ -478,6 +502,14 @@ class CourseController extends Controller
         }
 
         $video = CoursesVideo::where('id', $request->videoId)->first();
+
+        if($request->type == 'video' && (!$request->video && $video->video_url == 'null')) {
+            return ResponseHelper::error('Please add a video');
+        }
+
+        elseif($request->type == 'text' && !$request->body) {
+            return ResponseHelper::error('Please add a body to the content');
+        }
 
         $requestOrder = $request->order;
         $previousOrder = $video->order;
@@ -533,9 +565,11 @@ class CourseController extends Controller
         $video->duration = $request->duration;
         $video->order = $newOrder;
         $video->overall_order = $newOverallOrder;
+        $video->type = $request->type;
+        $video->body = $request->body;
         $video->save();
 
-        return ResponseHelper::success('Video Updated successfully', ['video' => $video]);
+        return ResponseHelper::success('Lecture Updated successfully', ['video' => $video]);
     }
 
     public function deleteVideo(Request $request) {
@@ -669,6 +703,9 @@ class CourseController extends Controller
             ]);
         }
 
+        $courseId = $request->courseId;
+
+        // check if the whole module is completed
         $allVideoIds = CoursesVideo::where('course_section_id', $moduleId)->pluck('id');
 
         $completedCount = VideoProgress::where('user_id', $request->userId)
@@ -684,6 +721,27 @@ class CourseController extends Controller
 
             if($checkModule) {
                 $update = $checkModule->update([
+                    'completed_at' => now(),
+                ]);
+            }
+        }
+
+        // check if the whole course is completed
+        $allModuleIds = CoursesSection::where('course_id', $courseId)->pluck('id');
+
+        $completedModuleCount = ModuleProgress::where('user_id', $request->userId)
+        ->whereIn('course_section_id', $allModuleIds)
+        ->whereNotNull('completed_at')
+        ->count();
+
+        if ($completedModuleCount === $allModuleIds->count()) {
+            // course is completed
+            $checkCourse =  Enrollment::where('user_id', $request->userId)
+            ->where('course_id', $courseId)
+            ->first();
+
+            if($checkCourse) {
+                $update = $checkCourse->update([
                     'completed_at' => now(),
                 ]);
             }
@@ -1186,5 +1244,36 @@ class CourseController extends Controller
 
         return ResponseHelper::success('Courses fetched successfully', ['courses' => $courses]);
 
+    }
+
+    public function review(Request $request) {
+        $validator = Validator::make($request->all(), [
+            'user_id' => 'required|exists:users,id',
+            'course_id' => 'required|exists:courses,id',
+            'rating' => 'required|integer|min:1|max:5',
+            'review' => 'nullable|string|max:1000',
+        ]);
+
+        if ($validator->fails()) {
+            $firstError = $validator->errors()->first();
+            return ResponseHelper::error($firstError, $validator->errors(), 422);
+        }
+
+        // Optional: Check if user is enrolled
+        $enrolled = Enrollment::where('user_id', $request->user_id)
+        ->where('course_id', $request->course_id)
+        ->exists();
+
+        if (!$enrolled) {
+            return ResponseHelper::error('Only enrolled users can submit a review');
+        }
+
+        // Update if already reviewed
+        $review = Review::updateOrCreate(
+            ['user_id' => $request->user_id, 'course_id' => $request->course_id],
+            ['rating' => $request->rating, 'review' => $request->review]
+        );
+
+        return ResponseHelper::success('Review submitted successfully.', ['review' => $review]);
     }
 }

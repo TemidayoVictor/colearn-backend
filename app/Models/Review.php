@@ -4,14 +4,15 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class Enrollment extends Model
+class Review extends Model
 {
-    protected $table = "enrollments";
+    protected $table = "reviews";
 
     protected $fillable = [
         'user_id',
         'course_id',
-        'completed_at',
+        'rating',
+        'review'
     ];
 
     public function user()
@@ -24,3 +25,4 @@ class Enrollment extends Model
         return $this->belongsTo(Course::class);
     }
 }
+
