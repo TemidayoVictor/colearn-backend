@@ -11,20 +11,20 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('general_settings', function (Blueprint $table) {
-            $table->id();
-            $table->integer('course_percentage')->default(70);
-            $table->integer('consultation_perentage')->default(30);
-            $table->timestamps();
+        Schema::table('wallets', function (Blueprint $table) {
+            //
+            $table->string('type')->nullable();
         });
     }
 
     /**
      * Reverse the migrations.
      */
-
     public function down(): void
     {
-        Schema::dropIfExists('general_settings');
+        Schema::table('wallets', function (Blueprint $table) {
+            //
+            $table->dropColumn('type');
+        });
     }
 };

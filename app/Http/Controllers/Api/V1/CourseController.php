@@ -26,6 +26,9 @@ use App\Models\Enrollment;
 use App\Models\VideoProgress;
 use App\Models\ModuleProgress;
 use App\Models\Review;
+use App\Models\GeneralSetting;
+use App\Models\Transaction;
+use App\Models\Wallet;
 
 class CourseController extends Controller
 {
@@ -1187,12 +1190,15 @@ class CourseController extends Controller
 
         $allCart = $request->cart;
         $userId = $request->id;
+        $total = 0;
+        $general = GeneralSetting::first();
+        $percentage = $general->course_percentage;
 
         foreach ($allCart as $data) {
             $cartId = $data['id'];
 
             // Fetch cart with course and coupon
-            $cart = Cart::where('id', $cartId)->with('course', 'coupon')->first();
+            $cart = Cart::where('id', $cartId)->with('course.instructor.user', 'coupon')->first();
 
             if (!$cart || !$cart->course || $cart->user_id != $request->id) {
                 continue; // skip invalid or incomplete items
@@ -1225,6 +1231,52 @@ class CourseController extends Controller
                 'user_id' => $userId,
                 'course_id' => $cart->course->id,
             ]);
+
+            // update the instructors wallet
+            $instructorUserId = $cart->course->instructor->user->id;
+            $instructorEarning = ($percentage * $price) / 100;
+            $adminEarning = $price - $instructorEarning;
+
+            $userWallet = Wallet::firstOrCreate(
+                [
+                    'user_id' => $instructorUserId,
+                    'type' => 'Instructor',
+                ]
+            );
+
+            $instructorBalance = $userWallet->balance;
+            $userWallet->balance = $instructorBalance + $instructorEarning;
+            $userWallet->save();
+
+            // update admin wallet with the balance
+            $adminWallet = Wallet::where('type', 'Admin')->first();
+            $adminBalance = $adminWallet->balance;
+            $adminWallet->balance = $adminBalance + $adminEarning;
+            $adminWallet->save();
+
+            // create a transaction for it
+            $message = "Purchase of ".$cart->course->title." course";
+            $reference = Str::uuid()->toString();
+            $adminReference = Str::uuid()->toString();
+
+            $transaction = Transaction::create([
+                'user_id' => $instructorUserId,
+                'wallet_id' => $userWallet->id,
+                'type' => 'credit',
+                'amount' => $instructorEarning,
+                'reference' => $reference,
+                'description' => $message,
+            ]);
+
+            $adminTransaction = Transaction::create([
+                'user_id' => $adminWallet->user_id,
+                'wallet_id' => $adminWallet->id,
+                'type' => 'credit',
+                'amount' => $adminEarning,
+                'reference' => 'adm-'.$adminReference,
+                'description' => $message,
+            ]);
+
         }
 
         return ResponseHelper::success('Course enrollment successful');
