@@ -1259,6 +1259,8 @@ class CourseController extends Controller
             $reference = Str::uuid()->toString();
             $adminReference = Str::uuid()->toString();
 
+            // create transaction for both user and admin
+
             $transaction = Transaction::create([
                 'user_id' => $instructorUserId,
                 'wallet_id' => $userWallet->id,
@@ -1266,6 +1268,7 @@ class CourseController extends Controller
                 'amount' => $instructorEarning,
                 'reference' => $reference,
                 'description' => $message,
+                'user_type' => 'Instructor',
             ]);
 
             $adminTransaction = Transaction::create([
@@ -1275,6 +1278,7 @@ class CourseController extends Controller
                 'amount' => $adminEarning,
                 'reference' => 'adm-'.$adminReference,
                 'description' => $message,
+                'user_type' => 'Admin',
             ]);
 
         }

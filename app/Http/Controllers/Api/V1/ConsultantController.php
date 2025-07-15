@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 use App\Models\User;
 use App\Models\Instructor;
@@ -18,6 +19,9 @@ use App\Models\Certification;
 use App\Models\Consultant;
 use App\Models\AvailabilitySlot;
 use App\Models\Booking;
+use App\Models\GeneralSetting;
+use App\Models\Transaction;
+use App\Models\Wallet;
 
 class ConsultantController extends Controller
 {
@@ -698,7 +702,61 @@ class ConsultantController extends Controller
             return ResponseHelper::error($firstError, $validator->errors(), 422);
         }
 
-        $booking = Booking::where('id', $request->id)->first();
+        $booking = Booking::where('id', $request->id)->with('consultant.instructor.user')->first();
+
+        // get the price for the session
+        $price = $booking->amount;
+
+        $general = GeneralSetting::first();
+        $percentage = $general->consultation_perentage;
+
+        $consultantEarning = ($percentage * $price) / 100;
+        $adminEarning = $price - $consultantEarning;
+
+        $consultantUserId = $booking->consultant->instructor->user->id;
+
+        $userWallet = Wallet::firstOrCreate(
+            [
+                'user_id' => $consultantUserId,
+                'type' => 'Instructor',
+            ]
+        );
+
+        $consultantBalance = $userWallet->balance;
+        $userWallet->balance = $consultantBalance + $consultantEarning;
+        $userWallet->save();
+
+        // update admin wallet with the balance
+        $adminWallet = Wallet::where('type', 'Admin')->first();
+        $adminBalance = $adminWallet->balance;
+        $adminWallet->balance = $adminBalance + $adminEarning;
+        $adminWallet->save();
+
+        $message = "Consultation Session with ".$booking->user->first_name." ".$booking->user->last_name;
+        $reference = Str::uuid()->toString();
+        $adminReference = Str::uuid()->toString();
+
+        // create transaction for both user and admin
+
+        $transaction = Transaction::create([
+            'user_id' => $consultantUserId,
+            'wallet_id' => $userWallet->id,
+            'type' => 'credit',
+            'amount' => $consultantEarning,
+            'reference' => $reference,
+            'description' => $message,
+            'user_type' => 'Consultant',
+        ]);
+
+        $adminTransaction = Transaction::create([
+            'user_id' => $adminWallet->user_id,
+            'wallet_id' => $adminWallet->id,
+            'type' => 'credit',
+            'amount' => $adminEarning,
+            'reference' => 'adm-'.$adminReference,
+            'description' => $message,
+            'user_type' => 'Admin',
+        ]);
 
         $update = $booking->update([
             'payment_status' => 'paid',

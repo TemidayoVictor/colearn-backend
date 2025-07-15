@@ -16,6 +16,7 @@ class Transaction extends Model
         'description',
         'processed_at',
         'wallet_id',
+        'user_type',
     ];
 
     public function user()
