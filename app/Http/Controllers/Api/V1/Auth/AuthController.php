@@ -9,6 +9,9 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Auth;
 use Stevebauman\Location\Facades\Location;
 use App\Helpers\TimeZoneHelper;
+use Illuminate\Support\Facades\DB;
+use Carbon\Carbon;
+use Illuminate\Support\Facades\Hash;
 
 use App\Models\Country;
 use App\Models\Language;
@@ -71,5 +74,84 @@ class AuthController extends Controller
         $request->session()->invalidate(); // invalidates the session
         $request->session()->regenerateToken(); // regenerates the CSRF token
         return ResponseHelper::success("Logout Successful", []);
+    }
+
+    public function forgotPassword(Request $request) {
+        $validator = Validator::make($request->all(), [
+            'email' => 'required|exists:users,email',
+        ]);
+
+        if ($validator->fails()) {
+            $firstError = $validator->errors()->first();
+            return ResponseHelper::error($firstError, $validator->errors(), 422);
+        }
+
+        $email = $request->email;
+        $code = rand(100000, 999999);
+
+        DB::table('password_reset_tokens')->updateOrInsert(
+            ['email' => $email],
+            [
+                'token' => $code,
+                'created_at' => Carbon::now()
+            ]
+        );
+
+        return ResponseHelper::success("Otp Sent Successfully");
+    }
+
+    public function verifyResetCode(Request $request) {
+        $validator = Validator::make($request->all(), [
+            'email' => 'required|exists:users,email',
+            'code' => 'required',
+        ]);
+
+        if ($validator->fails()) {
+            $firstError = $validator->errors()->first();
+            return ResponseHelper::error($firstError, $validator->errors(), 422);
+        }
+
+        $record = DB::table('password_reset_tokens')
+        ->where('email', $request->email)
+        ->where('token', $request->code)
+        ->first();
+
+        if (!$record) {
+            return ResponseHelper::error('Invalid or expired code', [], 401);
+        }
+
+        return ResponseHelper::success("Code verified successfully");
+    }
+
+    public function resetPassword(Request $request) {
+        $validator = Validator::make($request->all(), [
+            'email' => 'required|exists:users,email',
+            'code' => 'required',
+            'password' => 'required|confirmed|min:6',
+        ]);
+
+        if ($validator->fails()) {
+            $firstError = $validator->errors()->first();
+            return ResponseHelper::error($firstError, $validator->errors(), 422);
+        }
+
+        $record = DB::table('password_reset_tokens')
+        ->where('email', $request->email)
+        ->where('token', $request->code)
+        ->first();
+
+        if (!$record) {
+            return ResponseHelper::error('Invalid or expired code', [], 401);
+        }
+
+        // Update password
+        User::where('email', $request->email)->update([
+            'password' => Hash::make($request->password)
+        ]);
+
+        // Delete reset record
+        DB::table('password_reset_tokens')->where('email', $request->email)->delete();
+
+        return ResponseHelper::success("Password reset successfully");
     }
 }

@@ -12,6 +12,11 @@ Route::prefix('v1')->group(function () {
     // Sign up
     Route::post('/createAccount', [SignUpController::class, 'createAccount']);
 
+    // forgot password
+    Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
+    Route::post('/verify-reset-code', [AuthController::class, 'verifyResetCode']);
+    Route::post('/reset-password', [AuthController::class, 'resetPassword']);
+
     // authenticated routes
     Route::middleware('auth:sanctum')->group(function () {
         // Onboarding
