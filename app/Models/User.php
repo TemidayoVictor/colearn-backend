@@ -33,6 +33,8 @@ class User extends Authenticatable
         'preferences',
         'timezone',
         'profile_photo',
+        'status',
+        'reason',
     ];
 
     /**

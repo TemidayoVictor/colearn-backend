@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\V1\OnboardingController;
 use App\Http\Controllers\Api\V1\UtilitiesController;
 use App\Http\Controllers\Api\V1\CourseController;
 use App\Http\Controllers\Api\V1\ConsultantController;
+use App\Http\Controllers\Api\V1\SettingsController;
 
 Route::prefix('v1')->group(function () {
     // Sign up
@@ -119,6 +120,13 @@ Route::prefix('v1')->group(function () {
 
         Route::post('/update-payment', [ConsultantController::class, 'updatePaymentStatus']);
         Route::post('/update-session-status', [ConsultantController::class, 'updateSessionStatus']);
+
+        // Settings
+        Route::post('/change-email', [SettingsController::class, 'changeEmail']);
+        Route::post('/verify-email-code', [SettingsController::class, 'verifyEmailCode']);
+        Route::post('/change-password', [SettingsController::class, 'changePassword']);
+        Route::post('/deactivate-account', [SettingsController::class, 'deactivateAccount']);
+        Route::post('/reactivate-account', [SettingsController::class, 'reactivateAccount']);
     });
 
     // Utilities

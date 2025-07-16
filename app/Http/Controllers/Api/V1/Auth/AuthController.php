@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Hash;
 
+use App\Models\User;
 use App\Models\Country;
 use App\Models\Language;
 use App\Models\Preferences;
@@ -127,7 +128,15 @@ class AuthController extends Controller
         $validator = Validator::make($request->all(), [
             'email' => 'required|exists:users,email',
             'code' => 'required',
-            'password' => 'required|confirmed|min:6',
+            'password' => [
+                'required',
+                'string',
+                'min:8',
+                'regex:/[a-z]/',
+                'regex:/[A-Z]/',
+                'regex:/[0-9]/',
+                'regex:/[^A-Za-z0-9]/'
+            ],
         ]);
 
         if ($validator->fails()) {
