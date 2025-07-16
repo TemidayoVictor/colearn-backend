@@ -59,6 +59,7 @@ class SignUpController extends Controller
             'type' => 'Inactive',
             'email_verification_code' => $emailVerificationCode,
             'timezone' => $timezone,
+            'status' => 'Active',
         ]);
 
         // Log the user in (sets session cookie)
