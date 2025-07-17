@@ -26,6 +26,7 @@ Route::prefix('v1')->group(function () {
         Route::post('/select-account', [OnboardingController::class, 'selectAccount']);
 
         Route::post('/submit-details', [OnboardingController::class, 'submitDetails']);
+        Route::post('/edit-details', [OnboardingController::class, 'editDetails']);
         Route::post('/add-preferences', [OnboardingController::class, 'addPreferences']);
 
         Route::post('/submit-professional-details', [OnboardingController::class, 'submitProfessionalDetails']);

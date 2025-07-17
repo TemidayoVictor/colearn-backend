@@ -190,6 +190,61 @@ class OnboardingController extends Controller
 
     }
 
+    public function editDetails(Request $request) {
+        $validator = Validator::make($request->all(), [
+            'profile_photo' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+            'gender' => 'required|string|in:Male,Female,Other',
+            'country' => 'required|string',
+            'phone' => 'required|string',
+            'languages' => 'required|array',
+            'languages.*' => 'string',
+            'userId' => 'required|integer|exists:users,id',
+        ]);
+
+        if ($validator->fails()) {
+            $firstError = $validator->errors()->first();
+            return ResponseHelper::error($firstError, $validator->errors(), 422);
+        }
+
+        $user = User::where('id', $request->userId)->first();
+        $userTypeFetch = $user->type;
+
+        if($userTypeFetch == 'student') {
+            $userType = $user->student;
+        }
+
+        elseif($userTypeFetch == 'instructor') {
+            $userType = $user->instructor;
+        }
+
+        if (!$userType) {
+            return ResponseHelper::error('Profile not found');
+        }
+
+        $path = $userType->profile_photo;
+        // update details in student table
+        if ($request->hasFile('profile_photo')) {
+            $path = $request->file('profile_photo')->store('uploads/profile_photos', 'public');
+        }
+
+        $userType->gender = $request->gender;
+        $userType->languages = $request->languages;
+        $userType->country = $request->country;
+        $userType->phone = $request->phone;
+        $userType->profile_photo = $path;
+        $userType->save();
+
+        // update user progress
+        $user->country_phone_code = $request->country_phone_code;
+        $user->country_iso = $request->country_iso;
+        $user->country_iso3 = $request->country_iso3;
+        $user->profile_photo = $path;
+        $user->save();
+
+        return ResponseHelper::success('Details Updated Successfully', ['user' => $user, $userTypeFetch => $userType]);
+
+    }
+
     public function addPreferences(Request $request) {
         $validator = Validator::make($request->all(), [
             'preferences' => 'nullable|array',
