@@ -91,7 +91,7 @@ class OnboardingController extends Controller
 
             if(!$check) {
                 $student = Student::create([
-                    'user_id' => $request->userId
+                    'user_id' => $request->userId,
                 ]);
 
                 if($student) {
@@ -302,5 +302,20 @@ class OnboardingController extends Controller
         $user->save();
 
         return ResponseHelper::success('Details Updated Successfully', ['user' => $user, $userTypeFetch => $userType]);
+    }
+
+    public function instructorExperiences(Request $request) {
+        $validator = Validator::make($request->all(), [
+            'id' => 'required|exists:instructors,id',
+        ]);
+
+        if ($validator->fails()) {
+            $firstError = $validator->errors()->first();
+            return ResponseHelper::error($firstError, $validator->errors(), 422);
+        }
+
+        $experiences = Experience::where('instructor_id', $request->id)->get();
+
+        return ResponseHelper::success('Details fetched successfully', ['experiences' => $experiences]);
     }
 }

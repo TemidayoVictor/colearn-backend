@@ -33,6 +33,9 @@ Route::prefix('v1')->group(function () {
 
         // Instructor Authenticated Route
 
+        // Instructor Details
+        Route::post('/instructor-experiences', [OnboardingController::class, 'instructorExperiences']);
+
         // Courses
         Route::get('/all-courses', [CourseController::class, 'allCourses']);
 

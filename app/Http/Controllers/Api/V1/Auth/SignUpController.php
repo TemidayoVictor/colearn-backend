@@ -8,6 +8,8 @@ use App\Helpers\ResponseHelper;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
+use Stevebauman\Location\Facades\Location;
+use App\Helpers\TimeZoneHelper;
 
 use App\Models\User;
 use App\Models\Country;
@@ -46,9 +48,6 @@ class SignUpController extends Controller
         $timezone = null;
         if ($position && $position->countryCode) {
             $timezone = TimezoneHelper::mapCountryToTimezone($position->countryCode);
-
-            // Optionally, save to user or consultant profile
-            Auth::user()->update(['timezone' => $timezone]);
         }
 
         $user = User::create([
