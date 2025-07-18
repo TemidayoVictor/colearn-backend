@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\V1\UtilitiesController;
 use App\Http\Controllers\Api\V1\CourseController;
 use App\Http\Controllers\Api\V1\ConsultantController;
 use App\Http\Controllers\Api\V1\SettingsController;
+use App\Http\Controllers\Api\V1\AdminController;
 
 Route::prefix('v1')->group(function () {
     // Sign up
@@ -17,6 +18,8 @@ Route::prefix('v1')->group(function () {
     Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
     Route::post('/verify-reset-code', [AuthController::class, 'verifyResetCode']);
     Route::post('/reset-password', [AuthController::class, 'resetPassword']);
+
+    Route::post('/add-admin', [AdminController::class, 'addAdmin']);
 
     // authenticated routes
     Route::middleware('auth:sanctum')->group(function () {
@@ -136,6 +139,10 @@ Route::prefix('v1')->group(function () {
         Route::post('/change-password', [SettingsController::class, 'changePassword']);
         Route::post('/deactivate-account', [SettingsController::class, 'deactivateAccount']);
         Route::post('/reactivate-account', [SettingsController::class, 'reactivateAccount']);
+
+
+        // Admin Routes
+
     });
 
     // Utilities
