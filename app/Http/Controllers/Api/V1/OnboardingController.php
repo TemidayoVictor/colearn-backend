@@ -265,11 +265,33 @@ class OnboardingController extends Controller
             $userType->disciplines = $request->preferences;
             $user->profile_progress = 'completed';
             $user->save();
+            $userType->save();
             return ResponseHelper::success('Details Updated Successfully', ['user' => $user]);
         }
 
         $user->preferences = $request->preferences;
         $user->profile_progress = 'completed';
+        $user->save();
+
+        return ResponseHelper::success('Details Updated Successfully', ['user' => $user]);
+    }
+
+    public function editName(Request $request) {
+        $validator = Validator::make($request->all(), [
+            'first_name' => 'required',
+            'last_name' => 'required',
+            'userId' => 'required|integer|exists:users,id',
+        ]);
+
+        if ($validator->fails()) {
+            $firstError = $validator->errors()->first();
+            return ResponseHelper::error($firstError, $validator->errors(), 422);
+        }
+
+        $user = User::where('id', $request->userId)->first();
+
+        $user->first_name = $request->first_name;
+        $user->last_name = $request->last_name;
         $user->save();
 
         return ResponseHelper::success('Details Updated Successfully', ['user' => $user]);
@@ -313,6 +335,43 @@ class OnboardingController extends Controller
 
         return ResponseHelper::success('Details Updated Successfully', ['user' => $user, $userTypeFetch => $userType]);
 
+    }
+
+    public function editProfessionalData(Request $request) {
+        $validator = Validator::make($request->all(), [
+            'userId' => 'required|exists:users,id',
+            'title' => 'required|string',
+            'headline' => 'required|string',
+            'category' => 'required|string',
+            'bio' => 'required|string',
+        ]);
+
+        if ($validator->fails()) {
+            $firstError = $validator->errors()->first();
+            return ResponseHelper::error($firstError, $validator->errors(), 422);
+        }
+
+        $type = $request->type;
+        $user = User::where('id', $request->userId)->first();
+        $userTypeFetch = $user->type;
+
+        if($userTypeFetch != "instructor") {
+            return ResponseHelper::error('Profile not found');
+        }
+
+        $userType = $user->instructor;
+
+        $userType->title = $request->title;
+        $userType->professional_headline = $request->headline;
+        $userType->category = $request->category;
+        $userType->bio = $request->bio;
+        $userType->linkedin_url = $request->linkedin;
+        $userType->youtube_url = $request->youtube;
+        $userType->twitter_url = $request->twitter;
+        $userType->website = $request->website;
+        $userType->save();
+
+        return ResponseHelper::success('Details Updated Successfully', ['user' => $user, $userTypeFetch => $userType]);
     }
 
     public function submitExperiences(Request $request) {
@@ -359,6 +418,97 @@ class OnboardingController extends Controller
         return ResponseHelper::success('Details Updated Successfully', ['user' => $user, $userTypeFetch => $userType]);
     }
 
+    public function addExperiences(Request $request) {
+        $validator = Validator::make($request->all(), [
+            'userId' => 'required|exists:users,id',
+            'experiences' => 'required|array',
+            'experiences.*.title' => 'required|string|max:255',
+            'experiences.*.organization' => 'required|string|max:255',
+            'experiences.*.description' => 'nullable|string',
+            'experiences.*.start_date' => 'required|date',
+            'experiences.*.end_date' => 'nullable|date',
+            'experiences.*.currently_working' => 'required|boolean',
+        ]);
+
+        if ($validator->fails()) {
+            $firstError = $validator->errors()->first();
+            return ResponseHelper::error($firstError, $validator->errors(), 422);
+        }
+
+        $user = User::where('id', $request->userId)->first();
+        $userTypeFetch = $user->type;
+
+        if($userTypeFetch != "instructor") {
+            return ResponseHelper::error('Profile not found');
+        }
+
+        $userType = $user->instructor;
+
+        foreach ($request->experiences as $exp) {
+            Experience::create([
+                'instructor_id' => $userType->id,
+                'title' => $exp['title'],
+                'organization' => $exp['organization'],
+                'description' => $exp['description'],
+                'start_date' => $exp['start_date'],
+                'end_date' => $exp['currently_working'] ? null : $exp['end_date'],
+                'currently_working' => $exp['currently_working'],
+            ]);
+        }
+
+        return ResponseHelper::success('Details Updated Successfully', ['user' => $user, $userTypeFetch => $userType]);
+    }
+
+    public function editExperience(Request $request) {
+        $data = $request->input('experience');
+
+        $validator = Validator::make($data, [
+            'id' => 'required|exists:experiences,id',
+            'title' => 'required|string|max:255',
+            'organization' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'start_date' => 'required|date',
+            'end_date' => 'nullable|date',
+            'currently_working' => 'required|boolean',
+        ]);
+
+        if ($validator->fails()) {
+            $firstError = $validator->errors()->first();
+            return ResponseHelper::error($firstError, $validator->errors(), 422);
+        }
+
+        $experience = Experience::where('id', $request->experience['id'])->first();
+        Log::info($experience);
+        Log::info($request);
+
+        $update = $experience->update([
+            'title' => $request->title,
+            'organization' => $request->organization,
+            'description' => $request->description,
+            'start_date' => $request->start_date,
+            'end_date' => $request->currently_working ? null : $request->end_date,
+            'currently_working' => $request->currently_working,
+        ]);
+
+        return ResponseHelper::success('Details Updated Successfully', ['experience' => $experience]);
+    }
+
+    public function deleteExperience(Request $request) {
+        $validator = Validator::make($request->all(), [
+            'id' => 'required|exists:experiences,id',
+        ]);
+
+        if ($validator->fails()) {
+            $firstError = $validator->errors()->first();
+            return ResponseHelper::error($firstError, $validator->errors(), 422);
+        }
+
+        $experience = Experience::where('id', $request->id)->first();
+        $experience->delete();
+
+        return ResponseHelper::success('Experience deleted successfully');
+    }
+
     public function instructorExperiences(Request $request) {
         $validator = Validator::make($request->all(), [
             'id' => 'required|exists:instructors,id',
@@ -369,8 +519,9 @@ class OnboardingController extends Controller
             return ResponseHelper::error($firstError, $validator->errors(), 422);
         }
 
-        $experiences = Experience::where('instructor_id', $request->id)->get();
+        $experiences = Experience::where('instructor_id', $request->id)->orderBy('id', 'desc')->get();
 
         return ResponseHelper::success('Details fetched successfully', ['experiences' => $experiences]);
     }
+
 }

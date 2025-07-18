@@ -28,9 +28,14 @@ Route::prefix('v1')->group(function () {
         Route::post('/submit-details', [OnboardingController::class, 'submitDetails']);
         Route::post('/edit-details', [OnboardingController::class, 'editDetails']);
         Route::post('/add-preferences', [OnboardingController::class, 'addPreferences']);
+        Route::post('/edit-name', [OnboardingController::class, 'editName']);
+        Route::post('/edit-professional-data', [OnboardingController::class, 'editProfessionalData']);
 
         Route::post('/submit-professional-details', [OnboardingController::class, 'submitProfessionalDetails']);
         Route::post('/submit-experiences', [OnboardingController::class, 'submitExperiences']);
+        Route::post('/add-experiences', [OnboardingController::class, 'addExperiences']);
+        Route::post('/edit-experience', [OnboardingController::class, 'editExperience']);
+        Route::post('/delete-experience', [OnboardingController::class, 'deleteExperience']);
 
         // Instructor Authenticated Route
 
