@@ -408,7 +408,7 @@ class OnboardingController extends Controller
                 'description' => $exp['description'],
                 'start_date' => $exp['start_date'],
                 'end_date' => $exp['currently_working'] ? null : $exp['end_date'],
-                'currently_working' => $exp['currently_working'],
+                'is_current' => $exp['currently_working'],
             ]);
         }
 
@@ -452,7 +452,7 @@ class OnboardingController extends Controller
                 'description' => $exp['description'],
                 'start_date' => $exp['start_date'],
                 'end_date' => $exp['currently_working'] ? null : $exp['end_date'],
-                'currently_working' => $exp['currently_working'],
+                'is_current' => $exp['currently_working'],
             ]);
         }
 
@@ -460,8 +460,8 @@ class OnboardingController extends Controller
     }
 
     public function editExperience(Request $request) {
+        Log::info($request);
         $data = $request->input('experience');
-
         $validator = Validator::make($data, [
             'id' => 'required|exists:experiences,id',
             'title' => 'required|string|max:255',
@@ -478,16 +478,14 @@ class OnboardingController extends Controller
         }
 
         $experience = Experience::where('id', $request->experience['id'])->first();
-        Log::info($experience);
-        Log::info($request);
 
         $update = $experience->update([
-            'title' => $request->title,
-            'organization' => $request->organization,
-            'description' => $request->description,
-            'start_date' => $request->start_date,
-            'end_date' => $request->currently_working ? null : $request->end_date,
-            'currently_working' => $request->currently_working,
+            'title' => $request->experience['title'],
+            'organization' => $request->experience['organization'],
+            'description' => $request->experience['description'],
+            'start_date' => $request->experience['start_date'],
+            'end_date' => $request->experience['currently_working'] ? null : $request->experience['end_date'],
+            'is_current' => $request->experience['currently_working'],
         ]);
 
         return ResponseHelper::success('Details Updated Successfully', ['experience' => $experience]);

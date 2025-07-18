@@ -19,6 +19,10 @@ class Experience extends Model
         'is_current',
     ];
 
+    protected $casts = [
+        'is_current' => 'boolean',
+    ];
+
     public function instructor()
     {
         return $this->belongsTo(Instructor::class);
