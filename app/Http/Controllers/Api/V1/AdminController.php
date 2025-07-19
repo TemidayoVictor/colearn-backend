@@ -37,15 +37,18 @@ class AdminController extends Controller
             $timezone = TimezoneHelper::mapCountryToTimezone($position->countryCode);
         }
 
+        $emailVerificationCode = random_int(100000, 999999);
+
         $user = User::create([
             'first_name' => $request->first_name,
             'last_name' => $request->last_name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
-            'type' => 'Active',
+            'type' => 'admin',
             'email_verification_code' => $emailVerificationCode,
             'timezone' => $timezone,
             'status' => 'Active',
+            'profile_progress' => 'completed',
         ]);
 
         return ResponseHelper::success("Account created successfully");

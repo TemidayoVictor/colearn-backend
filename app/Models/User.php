@@ -35,6 +35,7 @@ class User extends Authenticatable
         'profile_photo',
         'status',
         'reason',
+        'verification_status',
     ];
 
     /**
