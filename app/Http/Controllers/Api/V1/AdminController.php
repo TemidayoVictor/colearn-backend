@@ -9,6 +9,8 @@ use Illuminate\Support\Facades\Hash;
 use Stevebauman\Location\Facades\Location;
 use App\Helpers\TimeZoneHelper;
 use App\Helpers\ResponseHelper;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 
 use App\Models\User;
 use App\Models\Transaction;
@@ -183,5 +185,43 @@ class AdminController extends Controller
         ]);
 
         return ResponseHelper::success("Wallet debited successfully");
+    }
+
+    public function allTransactions(Request $request) {
+        $transactions = Transaction::all()->groupBy(function($transaction) {
+            return Carbon::parse($transaction->created_at)->format('F Y');
+        });
+
+        return ResponseHelper::success("Data fetched successfully", ['transactions' => $transactions]);
+    }
+
+    public function adminTransactions(Request $request) {
+        $transactions = Transaction::where('user_type', 'Admin')->get()->groupBy(function($transaction) {
+            return Carbon::parse($transaction->created_at)->format('F Y');
+        });
+
+        return ResponseHelper::success("Data fetched successfully", ['transactions' => $transactions]);
+    }
+
+    public function adminCreditTransactions(Request $request) {
+        $transactions = Transaction::where('user_type', 'Admin')
+            ->where('type', 'credit')
+            ->get()
+            ->groupBy(function($transaction) {
+                return Carbon::parse($transaction->created_at)->format('F Y');
+            });
+
+        return ResponseHelper::success("Data fetched successfully", ['transactions' => $transactions]);
+    }
+
+    public function adminDebitTransactions(Request $request) {
+        $transactions = Transaction::where('user_type', 'Admin')
+            ->where('type', 'debit')
+            ->get()
+            ->groupBy(function($transaction) {
+                return Carbon::parse($transaction->created_at)->format('F Y');
+            });
+
+        return ResponseHelper::success("Data fetched successfully", ['transactions' => $transactions]);
     }
 }

@@ -146,6 +146,10 @@ Route::prefix('v1')->group(function () {
         // Admin Routes
         Route::post('/credit-wallet', [AdminController::class, 'creditWallet']);
         Route::post('/debit-wallet', [AdminController::class, 'debitWallet']);
+        Route::post('/all-transactions', [AdminController::class, 'allTransactions']);
+        Route::post('/admin-transactions', [AdminController::class, 'adminTransactions']);
+        Route::post('/admin-credit-transactions', [AdminController::class, 'adminCreditTransactions']);
+        Route::post('/admin-debit-transactions', [AdminController::class, 'adminDebitTransactions']);
     });
 
     // Utilities
