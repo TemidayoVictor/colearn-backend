@@ -117,6 +117,7 @@ Route::prefix('v1')->group(function () {
         Route::get('/get-all-consultants', [ConsultantController::class, 'getAllConsultants']);
         Route::post('/get-consultant', [ConsultantController::class, 'getConsultant']);
 
+        Route::get('/get-all-sessions', [ConsultantController::class, 'getAllSessions']);
         Route::post('/get-sessions', [ConsultantController::class, 'getSessions']);
         Route::post('/get-sessions-consultant', [ConsultantController::class, 'getSessionsConsultant']);
         Route::post('/book-session', [ConsultantController::class, 'bookSession']);
@@ -126,6 +127,7 @@ Route::prefix('v1')->group(function () {
 
         Route::post('/cancel-session-user', [ConsultantController::class, 'cancelSessionUser']);
         Route::post('/cancel-session-consultant', [ConsultantController::class, 'cancelSessionConsultant']);
+        Route::post('/cancel-session-admin', [ConsultantController::class, 'cancelSessionAdmin']);
 
         Route::post('/reschedule-session-consultant', [ConsultantController::class, 'rescheduleSessionConsultant']);
         Route::post('/approve-reschedule', [ConsultantController::class, 'approveReschedule']);
@@ -142,7 +144,8 @@ Route::prefix('v1')->group(function () {
 
 
         // Admin Routes
-
+        Route::post('/credit-wallet', [AdminController::class, 'creditWallet']);
+        Route::post('/debit-wallet', [AdminController::class, 'debitWallet']);
     });
 
     // Utilities

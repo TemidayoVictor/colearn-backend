@@ -345,6 +345,15 @@ class ConsultantController extends Controller
         return ResponseHelper::success('Consultant fetched successfully', ['consultant' => $consultant]);
     }
 
+    public function getAllSessions() {
+        $bookings = Booking::with(['consultant.instructor.user', 'user'])
+        ->orderBy('created_at', 'desc')
+        ->get();
+
+        return ResponseHelper::success('Sessions fetched successfully', ['bookings' => $bookings]);
+
+    }
+
     public function getSessions(Request $request) {
         $validator = Validator::make($request->all(), [
             'userId' => 'required|exists:users,id',
@@ -573,6 +582,31 @@ class ConsultantController extends Controller
 
         $booking = Booking::where('id', $request->id)->first();
 
+        if($booking->payment_status == 'paid' ) {
+            $amount = $booking->amount;
+
+            // credit admiin wallet
+            $adminWallet = Wallet::where('type', 'Admin')->first();
+            $adminBalance = $adminWallet->balance;
+            $adminWallet->balance = $adminBalance + $amount;
+            $adminWallet->save();
+
+            // create transaction
+            $admMessage = "Cancellation of session between ".$booking->consultant->instructor->$user->first_name." ".$booking->consultant->instructor->user->last_name." and ".$user->first_name." ".$user->last_name;
+            $adminReference = Str::uuid()->toString();
+
+            $adminTransaction = Transaction::create([
+                'user_id' => $adminWallet->user_id,
+                'wallet_id' => $adminWallet->id,
+                'type' => 'credit',
+                'amount' => $amount,
+                'reference' => 'adm-'.$adminReference,
+                'description' => $admMessage,
+                'user_type' => 'Admin',
+            ]);
+
+        }
+
         $cancel = $booking->update([
             'status' => 'cancelled-by-user',
             'cancel_note' => $request->note,
@@ -594,8 +628,79 @@ class ConsultantController extends Controller
 
         $booking = Booking::where('id', $request->id)->first();
 
+        if($booking->payment_status == 'paid' ) {
+            $amount = $booking->amount;
+
+            // credit admiin wallet
+            $adminWallet = Wallet::where('type', 'Admin')->first();
+            $adminBalance = $adminWallet->balance;
+            $adminWallet->balance = $adminBalance + $amount;
+            $adminWallet->save();
+
+            // create transaction
+            $admMessage = "Cancellation of session between ".$booking->consultant->instructor->$user->first_name." ".$booking->consultant->instructor->user->last_name." and ".$user->first_name." ".$user->last_name;
+            $adminReference = Str::uuid()->toString();
+
+            $adminTransaction = Transaction::create([
+                'user_id' => $adminWallet->user_id,
+                'wallet_id' => $adminWallet->id,
+                'type' => 'credit',
+                'amount' => $amount,
+                'reference' => 'adm-'.$adminReference,
+                'description' => $admMessage,
+                'user_type' => 'Admin',
+            ]);
+
+        }
+
         $cancel = $booking->update([
             'status' => 'cancelled-by-consultant',
+            'cancel_note' => $request->note,
+        ]);
+
+        return ResponseHelper::success('Session cancelled successfully', ['booking' => $booking]);
+    }
+
+    public function cancelSessionAdmin(Request $request) {
+        $validator = Validator::make($request->all(), [
+            'id' => 'required|exists:bookings,id',
+            'note' => 'required|string',
+        ]);
+
+        if ($validator->fails()) {
+            $firstError = $validator->errors()->first();
+            return ResponseHelper::error($firstError, $validator->errors(), 422);
+        }
+
+        $booking = Booking::with(['consultant.instructor.user', 'user'])->where('id', $request->id)->first();
+
+        if($booking->payment_status == 'paid' ) {
+            $amount = $booking->amount;
+
+            // credit admiin wallet
+            $adminWallet = Wallet::where('type', 'Admin')->first();
+            $adminBalance = $adminWallet->balance;
+            $adminWallet->balance = $adminBalance + $amount;
+            $adminWallet->save();
+
+            // create transaction
+            $admMessage = "Cancellation of session between ".$booking->consultant->instructor->$user->first_name." ".$booking->consultant->instructor->user->last_name." and ".$user->first_name." ".$user->last_name;
+            $adminReference = Str::uuid()->toString();
+
+            $adminTransaction = Transaction::create([
+                'user_id' => $adminWallet->user_id,
+                'wallet_id' => $adminWallet->id,
+                'type' => 'credit',
+                'amount' => $amount,
+                'reference' => 'adm-'.$adminReference,
+                'description' => $admMessage,
+                'user_type' => 'Admin',
+            ]);
+
+        }
+
+        $cancel = $booking->update([
+            'status' => 'cancelled-by-admin',
             'cancel_note' => $request->note,
         ]);
 
