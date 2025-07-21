@@ -11,6 +11,7 @@ use App\Helpers\TimeZoneHelper;
 use App\Helpers\ResponseHelper;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Str;
 
 use App\Models\User;
 use App\Models\Transaction;
@@ -205,7 +206,13 @@ class AdminController extends Controller
         $adminWallet = Wallet::where('type', 'Admin')->first();
         $adminBalance = $adminWallet->balance;
         $adminSpendable = $adminWallet->spendable;
-        $adminWallet->balance = $adminBalance - $request->amount;
+        $newBalance = $adminBalance - $request->amount;
+
+        if($newBalance < 0) {
+            return ResponseHelper::error('Insufficient Amount');
+        }
+
+        $adminWallet->balance = $newBalance;
         $adminWallet->spendable = $adminSpendable + $request->amount;
         $adminWallet->save();
 
@@ -276,9 +283,8 @@ class AdminController extends Controller
         });
 
         $adminWallet = Wallet::where('type', 'Admin')->first();
-        $adminBalance = $adminWallet->balance;
 
-        return ResponseHelper::success("Data fetched successfully", ['transactions' => $sortedGrouped, 'adminBalance' => $adminBalance]);
+        return ResponseHelper::success("Data fetched successfully", ['transactions' => $sortedGrouped, 'adminWallet' => $adminWallet]);
     }
 
     public function adminTransactions(Request $request) {
@@ -291,9 +297,8 @@ class AdminController extends Controller
         });
 
         $adminWallet = Wallet::where('type', 'Admin')->first();
-        $adminBalance = $adminWallet->balance;
 
-        return ResponseHelper::success("Data fetched successfully", ['transactions' => $sortedGrouped, 'adminBalance' => $adminBalance]);
+        return ResponseHelper::success("Data fetched successfully", ['transactions' => $sortedGrouped, 'adminWallet' => $adminWallet]);
     }
 
     public function adminCreditTransactions(Request $request) {
@@ -309,9 +314,8 @@ class AdminController extends Controller
         });
 
         $adminWallet = Wallet::where('type', 'Admin')->first();
-        $adminBalance = $adminWallet->balance;
 
-        return ResponseHelper::success("Data fetched successfully", ['transactions' => $sortedGrouped, 'adminBalance' => $adminBalance]);
+        return ResponseHelper::success("Data fetched successfully", ['transactions' => $sortedGrouped, 'adminWallet' => $adminWallet]);
     }
 
     public function adminDebitTransactions(Request $request) {
@@ -327,8 +331,12 @@ class AdminController extends Controller
         });
 
         $adminWallet = Wallet::where('type', 'Admin')->first();
-        $adminBalance = $adminWallet->balance;
 
-        return ResponseHelper::success("Data fetched successfully", ['transactions' => $sortedGrouped, 'adminBalance' => $adminBalance]);
+        return ResponseHelper::success("Data fetched successfully", ['transactions' => $sortedGrouped, 'adminWallet' => $adminWallet]);
+    }
+
+    public function allUsers() {
+        $users = User::where('type', '!=', 'Admin')->get();
+        return ResponseHelper::success("Data fetched successfully", ['users' => $users]);
     }
 }
