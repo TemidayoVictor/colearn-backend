@@ -581,32 +581,6 @@ class ConsultantController extends Controller
         }
 
         $booking = Booking::where('id', $request->id)->first();
-
-        if($booking->payment_status == 'paid' ) {
-            $amount = $booking->amount;
-
-            // credit admiin wallet
-            $adminWallet = Wallet::where('type', 'Admin')->first();
-            $adminBalance = $adminWallet->balance;
-            $adminWallet->balance = $adminBalance + $amount;
-            $adminWallet->save();
-
-            // create transaction
-            $admMessage = "Cancellation of session between ".$booking->consultant->instructor->$user->first_name." ".$booking->consultant->instructor->user->last_name." and ".$user->first_name." ".$user->last_name;
-            $adminReference = Str::uuid()->toString();
-
-            $adminTransaction = Transaction::create([
-                'user_id' => $adminWallet->user_id,
-                'wallet_id' => $adminWallet->id,
-                'type' => 'credit',
-                'amount' => $amount,
-                'reference' => 'adm-'.$adminReference,
-                'description' => $admMessage,
-                'user_type' => 'Admin',
-            ]);
-
-        }
-
         $cancel = $booking->update([
             'status' => 'cancelled-by-user',
             'cancel_note' => $request->note,
@@ -628,31 +602,6 @@ class ConsultantController extends Controller
 
         $booking = Booking::where('id', $request->id)->first();
 
-        if($booking->payment_status == 'paid' ) {
-            $amount = $booking->amount;
-
-            // credit admiin wallet
-            $adminWallet = Wallet::where('type', 'Admin')->first();
-            $adminBalance = $adminWallet->balance;
-            $adminWallet->balance = $adminBalance + $amount;
-            $adminWallet->save();
-
-            // create transaction
-            $admMessage = "Cancellation of session between ".$booking->consultant->instructor->$user->first_name." ".$booking->consultant->instructor->user->last_name." and ".$user->first_name." ".$user->last_name;
-            $adminReference = Str::uuid()->toString();
-
-            $adminTransaction = Transaction::create([
-                'user_id' => $adminWallet->user_id,
-                'wallet_id' => $adminWallet->id,
-                'type' => 'credit',
-                'amount' => $amount,
-                'reference' => 'adm-'.$adminReference,
-                'description' => $admMessage,
-                'user_type' => 'Admin',
-            ]);
-
-        }
-
         $cancel = $booking->update([
             'status' => 'cancelled-by-consultant',
             'cancel_note' => $request->note,
@@ -673,31 +622,6 @@ class ConsultantController extends Controller
         }
 
         $booking = Booking::with(['consultant.instructor.user', 'user'])->where('id', $request->id)->first();
-
-        if($booking->payment_status == 'paid' ) {
-            $amount = $booking->amount;
-
-            // credit admiin wallet
-            $adminWallet = Wallet::where('type', 'Admin')->first();
-            $adminBalance = $adminWallet->balance;
-            $adminWallet->balance = $adminBalance + $amount;
-            $adminWallet->save();
-
-            // create transaction
-            $admMessage = "Cancellation of session between ".$booking->consultant->instructor->$user->first_name." ".$booking->consultant->instructor->user->last_name." and ".$user->first_name." ".$user->last_name;
-            $adminReference = Str::uuid()->toString();
-
-            $adminTransaction = Transaction::create([
-                'user_id' => $adminWallet->user_id,
-                'wallet_id' => $adminWallet->id,
-                'type' => 'credit',
-                'amount' => $amount,
-                'reference' => 'adm-'.$adminReference,
-                'description' => $admMessage,
-                'user_type' => 'Admin',
-            ]);
-
-        }
 
         $cancel = $booking->update([
             'status' => 'cancelled-by-admin',
@@ -809,49 +733,17 @@ class ConsultantController extends Controller
 
         $booking = Booking::where('id', $request->id)->with('consultant.instructor.user')->first();
 
-        // get the price for the session
-        $price = $booking->amount;
-
-        $general = GeneralSetting::first();
-        $percentage = $general->consultation_perentage;
-
-        $consultantEarning = ($percentage * $price) / 100;
-        $adminEarning = $price - $consultantEarning;
-
-        $consultantUserId = $booking->consultant->instructor->user->id;
-
-        $userWallet = Wallet::firstOrCreate(
-            [
-                'user_id' => $consultantUserId,
-                'type' => 'Instructor',
-            ]
-        );
-
-        $consultantBalance = $userWallet->balance;
-        $userWallet->balance = $consultantBalance + $consultantEarning;
-        $userWallet->save();
-
-        // update admin wallet with the balance
+        // update admin wallet with the amount
         $adminWallet = Wallet::where('type', 'Admin')->first();
         $adminBalance = $adminWallet->balance;
-        $adminWallet->balance = $adminBalance + $adminEarning;
+        $adminWallet->balance = $adminBalance + $booking->amount;
         $adminWallet->save();
 
-        $message = "Consultation Session with ".$booking->user->first_name." ".$booking->user->last_name;
+        $message = "Consultation Session between ".$booking->consultant->instructor->user->first_name." ".$booking->consultant->instructor->user->last_name." and".$booking->user->first_name." ".$booking->user->last_name;
         $reference = Str::uuid()->toString();
         $adminReference = Str::uuid()->toString();
 
-        // create transaction for both user and admin
-
-        $transaction = Transaction::create([
-            'user_id' => $consultantUserId,
-            'wallet_id' => $userWallet->id,
-            'type' => 'credit',
-            'amount' => $consultantEarning,
-            'reference' => $reference,
-            'description' => $message,
-            'user_type' => 'Consultant',
-        ]);
+        // create transaction admin
 
         $adminTransaction = Transaction::create([
             'user_id' => $adminWallet->user_id,
@@ -882,7 +774,7 @@ class ConsultantController extends Controller
             return ResponseHelper::error($firstError, $validator->errors(), 422);
         }
 
-        $booking = Booking::where('id', $request->id)->first();
+        $booking = Booking::where('id', $request->id)->with('consultant.instructor.user')->first();
 
         if(($request->status == 'missed_user' || $request->status == 'missed_consultant') && !$request->note) {
             return ResponseHelper::error('Please add a reason why you want to mark session as missed', 422);
@@ -905,6 +797,73 @@ class ConsultantController extends Controller
         }
 
         elseif($request->status == 'completed_user') {
+            // get the price for the session
+            $price = $booking->amount;
+
+            $general = GeneralSetting::first();
+            $percentage = $general->consultation_perentage;
+
+            $consultantEarning = ($percentage * $price) / 100;
+            $adminEarning = $price - $consultantEarning;
+
+            $consultantUserId = $booking->consultant->instructor->user->id;
+
+            $userWallet = Wallet::firstOrCreate(
+                [
+                    'user_id' => $consultantUserId,
+                    'type' => 'Instructor',
+                ]
+            );
+
+            // credit user wallet
+            $consultantBalance = $userWallet->balance;
+            $userWallet->balance = $consultantBalance + $consultantEarning;
+            $userWallet->save();
+
+            // debit admin wallet
+            $adminWallet = Wallet::where('type', 'Admin')->first();
+            $adminBalance = $adminWallet->balance;
+            $adminSpendable = $adminWallet->spendable;
+            $adminWallet->balance = $adminBalance - $consultantEarning - $adminEarning;
+            $adminWallet->spendable = $adminSpendable + $adminEarning;
+            $adminWallet->save();
+
+            $message = "Consultation Session with ".$booking->user->first_name." ".$booking->user->last_name;
+            $admMessage = "Consultation session completed by ".$booking->consultant->instructor->user->first_name." ".$booking->consultant->instructor->user->last_name;
+            $reference = Str::uuid()->toString();
+            $adminReference = Str::uuid()->toString();
+            // create transaction for both user and admin
+
+            $transaction = Transaction::create([
+                'user_id' => $consultantUserId,
+                'wallet_id' => $userWallet->id,
+                'type' => 'credit',
+                'amount' => $consultantEarning,
+                'reference' => $reference,
+                'description' => $message,
+                'user_type' => 'Consultant',
+            ]);
+
+            $adminTransaction = Transaction::create([
+                'user_id' => $adminWallet->user_id,
+                'wallet_id' => $adminWallet->id,
+                'type' => 'debit',
+                'amount' => $consultantEarning,
+                'reference' => 'adm-'.$adminReference,
+                'description' => $admMessage,
+                'user_type' => 'Admin',
+            ]);
+
+            $adminTransaction = Transaction::create([
+                'user_id' => $adminWallet->user_id,
+                'wallet_id' => $adminWallet->id,
+                'type' => 'credit',
+                'amount' => $adminEarning,
+                'reference' => 'adm-pr-'.$adminReference,
+                'description' => $admMessage,
+                'user_type' => 'Admin_Profit',
+            ]);
+
             $update = $booking->update([
                 'status' => $request->status,
                 'missed_client_note' => $request->note,

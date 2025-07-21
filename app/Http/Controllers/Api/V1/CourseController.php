@@ -1250,8 +1250,8 @@ class CourseController extends Controller
 
             // update admin wallet with the balance
             $adminWallet = Wallet::where('type', 'Admin')->first();
-            $adminBalance = $adminWallet->balance;
-            $adminWallet->balance = $adminBalance + $adminEarning;
+            $adminSpendable = $adminWallet->spendable;
+            $adminWallet->spendable = $adminSpendable + $adminEarning;
             $adminWallet->save();
 
             // create a transaction for it
@@ -1276,9 +1276,9 @@ class CourseController extends Controller
                 'wallet_id' => $adminWallet->id,
                 'type' => 'credit',
                 'amount' => $adminEarning,
-                'reference' => 'adm-'.$adminReference,
+                'reference' => 'adm-pr-'.$adminReference,
                 'description' => $message,
-                'user_type' => 'Admin',
+                'user_type' => 'Admin_Profit',
             ]);
 
         }

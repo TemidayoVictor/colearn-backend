@@ -187,41 +187,148 @@ class AdminController extends Controller
         return ResponseHelper::success("Wallet debited successfully");
     }
 
+    public function adminCredit(Request $request) {
+        $validator = Validator::make($request->all(), [
+            'id' => 'required|exists:users,id',
+            'amount' => 'required|integer',
+        ]);
+
+        if ($validator->fails()) {
+            $firstError = $validator->errors()->first();
+            return ResponseHelper::error($firstError, $validator->errors(), 422);
+        }
+
+        $user = User::where('id', $request->id)->first();
+        $userType = $user->type;
+
+        // credit admiin wallet spendable
+        $adminWallet = Wallet::where('type', 'Admin')->first();
+        $adminBalance = $adminWallet->balance;
+        $adminSpendable = $adminWallet->spendable;
+        $adminWallet->balance = $adminBalance - $request->amount;
+        $adminWallet->spendable = $adminSpendable + $request->amount;
+        $adminWallet->save();
+
+        // create transaction
+        $message = "Admin credit by ".$user->first_name." ".$user->last_name;
+        $reference = Str::uuid()->toString();
+
+        // create transaction
+        $adminTransaction = Transaction::create([
+            'user_id' => $adminWallet->user_id,
+            'wallet_id' => $adminWallet->id,
+            'type' => 'credit',
+            'amount' => $request->amount,
+            'reference' => 'adm-pr-'.$reference,
+            'description' => $message,
+            'user_type' => 'Admin_Profit',
+        ]);
+
+        return ResponseHelper::success("Wallet credited successfully");
+
+    }
+
+    public function adminDebit(Request $request) {
+        $validator = Validator::make($request->all(), [
+            'id' => 'required|exists:users,id',
+            'amount' => 'required|integer',
+        ]);
+
+        if ($validator->fails()) {
+            $firstError = $validator->errors()->first();
+            return ResponseHelper::error($firstError, $validator->errors(), 422);
+        }
+
+        $user = User::where('id', $request->id)->first();
+        $userType = $user->type;
+
+        // debit admiin wallet spendable
+        $adminWallet = Wallet::where('type', 'Admin')->first();
+        $adminSpendable = $adminWallet->spendable;
+        $adminWallet->spendable = $adminSpendable - $request->amount;
+        $adminWallet->save();
+
+        // create transaction
+        $message = "Admin debit by ".$user->first_name." ".$user->last_name;
+        $reference = Str::uuid()->toString();
+
+        $adminTransaction = Transaction::create([
+            'user_id' => $adminWallet->user_id,
+            'wallet_id' => $adminWallet->id,
+            'type' => 'debit',
+            'amount' => $request->amount,
+            'reference' => 'adm-pr-'.$reference,
+            'description' => $message,
+            'user_type' => 'Admin_Debit',
+        ]);
+
+        return ResponseHelper::success("Wallet debited successfully");
+
+    }
+
     public function allTransactions(Request $request) {
-        $transactions = Transaction::all()->groupBy(function($transaction) {
+        $transactions = Transaction::with('user')->get()->groupBy(function($transaction) {
             return Carbon::parse($transaction->created_at)->format('F Y');
         });
 
-        return ResponseHelper::success("Data fetched successfully", ['transactions' => $transactions]);
+        $sortedGrouped = $transactions->sortByDesc(function ($_, $key) {
+            return Carbon::createFromFormat('F Y', $key);
+        });
+
+        $adminWallet = Wallet::where('type', 'Admin')->first();
+        $adminBalance = $adminWallet->balance;
+
+        return ResponseHelper::success("Data fetched successfully", ['transactions' => $sortedGrouped, 'adminBalance' => $adminBalance]);
     }
 
     public function adminTransactions(Request $request) {
-        $transactions = Transaction::where('user_type', 'Admin')->get()->groupBy(function($transaction) {
+        $transactions = Transaction::where('user_type', 'Admin')->with('user')->get()->groupBy(function($transaction) {
             return Carbon::parse($transaction->created_at)->format('F Y');
         });
 
-        return ResponseHelper::success("Data fetched successfully", ['transactions' => $transactions]);
+        $sortedGrouped = $transactions->sortByDesc(function ($_, $key) {
+            return Carbon::createFromFormat('F Y', $key);
+        });
+
+        $adminWallet = Wallet::where('type', 'Admin')->first();
+        $adminBalance = $adminWallet->balance;
+
+        return ResponseHelper::success("Data fetched successfully", ['transactions' => $sortedGrouped, 'adminBalance' => $adminBalance]);
     }
 
     public function adminCreditTransactions(Request $request) {
         $transactions = Transaction::where('user_type', 'Admin')
             ->where('type', 'credit')
-            ->get()
+            ->with('user')->get()
             ->groupBy(function($transaction) {
                 return Carbon::parse($transaction->created_at)->format('F Y');
-            });
+        });
 
-        return ResponseHelper::success("Data fetched successfully", ['transactions' => $transactions]);
+        $sortedGrouped = $transactions->sortByDesc(function ($_, $key) {
+            return Carbon::createFromFormat('F Y', $key);
+        });
+
+        $adminWallet = Wallet::where('type', 'Admin')->first();
+        $adminBalance = $adminWallet->balance;
+
+        return ResponseHelper::success("Data fetched successfully", ['transactions' => $sortedGrouped, 'adminBalance' => $adminBalance]);
     }
 
     public function adminDebitTransactions(Request $request) {
         $transactions = Transaction::where('user_type', 'Admin')
             ->where('type', 'debit')
-            ->get()
+            ->with('user')->get()
             ->groupBy(function($transaction) {
                 return Carbon::parse($transaction->created_at)->format('F Y');
-            });
+        });
 
-        return ResponseHelper::success("Data fetched successfully", ['transactions' => $transactions]);
+        $sortedGrouped = $transactions->sortByDesc(function ($_, $key) {
+            return Carbon::createFromFormat('F Y', $key);
+        });
+
+        $adminWallet = Wallet::where('type', 'Admin')->first();
+        $adminBalance = $adminWallet->balance;
+
+        return ResponseHelper::success("Data fetched successfully", ['transactions' => $sortedGrouped, 'adminBalance' => $adminBalance]);
     }
 }
