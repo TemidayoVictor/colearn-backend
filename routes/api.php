@@ -142,7 +142,6 @@ Route::prefix('v1')->group(function () {
         Route::post('/deactivate-account', [SettingsController::class, 'deactivateAccount']);
         Route::post('/reactivate-account', [SettingsController::class, 'reactivateAccount']);
 
-
         // Admin Routes
         Route::post('/credit-wallet', [AdminController::class, 'creditWallet']);
         Route::post('/debit-wallet', [AdminController::class, 'debitWallet']);
@@ -157,6 +156,8 @@ Route::prefix('v1')->group(function () {
 
         Route::get('/all-users-admin', [AdminController::class, 'allUsers']);
         Route::post('/get-user-details', [AdminController::class, 'getUserDetails']);
+
+        Route::post('/update-general-settings', [AdminController::class, 'updateGeneralSettings']);
 
     });
 

@@ -16,6 +16,7 @@ use Illuminate\Support\Str;
 use App\Models\User;
 use App\Models\Transaction;
 use App\Models\Wallet;
+use App\Models\GeneralSetting;
 
 class AdminController extends Controller
 {
@@ -87,7 +88,12 @@ class AdminController extends Controller
         $adminWallet->save();
 
         // credit user wallet
-        $wallet = Wallet::where('user_id', $request->id)->first();
+        $wallet = Wallet::firstOrCreate(
+            [
+                'user_id' => $request->id,
+                'type' => 'Student',
+            ]
+        );
         $initialBalance = $wallet->balance;
         $newBalance = $initialBalance + $request->amount;
         $wallet->balance = $newBalance;
@@ -140,7 +146,14 @@ class AdminController extends Controller
         $userType = $user->type;
 
         // debit user wallet
-        $wallet = Wallet::where('user_id', $request->id)->first();
+
+        $wallet = Wallet::firstOrCreate(
+            [
+                'user_id' => $request->id,
+                'type' => 'Student',
+            ]
+        );
+
         $initialBalance = $wallet->balance;
         $newBalance = $initialBalance - $request->amount;
 
@@ -283,8 +296,9 @@ class AdminController extends Controller
         });
 
         $adminWallet = Wallet::where('type', 'Admin')->first();
+        $settings = GeneralSetting::first();
 
-        return ResponseHelper::success("Data fetched successfully", ['transactions' => $sortedGrouped, 'adminWallet' => $adminWallet]);
+        return ResponseHelper::success("Data fetched successfully", ['transactions' => $sortedGrouped, 'adminWallet' => $adminWallet, 'settings' => $settings]);
     }
 
     public function adminTransactions(Request $request) {
@@ -362,5 +376,27 @@ class AdminController extends Controller
         }
 
         return ResponseHelper::success("Data fetched successfully", ['user' => $user]);
+    }
+
+    public function updateGeneralSettings(Request $request) {
+        $validator = Validator::make($request->all(), [
+            'course_percentage' => 'required|integer',
+            'consultation_perentage' => 'required|integer',
+            'minimum_withdrawal' => 'required|integer',
+        ]);
+
+        if ($validator->fails()) {
+            $firstError = $validator->errors()->first();
+            return ResponseHelper::error($firstError, $validator->errors(), 422);
+        }
+
+        $settings = GeneralSetting::first();
+
+        $settings->course_percentage = $request->course_percentage;
+        $settings->consultation_perentage = $request->consultation_perentage;
+        $settings->minimum_withdrawal = $request->minimum_withdrawal;
+        $settings->save();
+
+        return ResponseHelper::success("General settings updated successfully", ['settings' => $settings]);
     }
 }

@@ -11,5 +11,6 @@ class GeneralSetting extends Model
     protected $fillable = [
         'course_percentage',
         'consultation_perentage',
+        'minimum_withdrawal',
     ];
 }
