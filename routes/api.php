@@ -156,6 +156,8 @@ Route::prefix('v1')->group(function () {
         Route::post('/admin-debit-transactions', [AdminController::class, 'adminDebitTransactions']);
 
         Route::get('/all-users-admin', [AdminController::class, 'allUsers']);
+        Route::post('/get-user-details', [AdminController::class, 'getUserDetails']);
+
     });
 
     // Utilities

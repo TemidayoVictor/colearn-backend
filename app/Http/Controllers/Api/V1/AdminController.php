@@ -339,4 +339,28 @@ class AdminController extends Controller
         $users = User::where('type', '!=', 'Admin')->get();
         return ResponseHelper::success("Data fetched successfully", ['users' => $users]);
     }
+
+    public function getUserDetails(Request $request) {
+        $validator = Validator::make($request->all(), [
+            'id' => 'required|exists:users,id',
+        ]);
+
+        if ($validator->fails()) {
+            $firstError = $validator->errors()->first();
+            return ResponseHelper::error($firstError, $validator->errors(), 422);
+        }
+
+        $user = User::where('id', $request->id)->first();
+        $userType = $user->type;
+
+        if($userType == 'student') {
+            $user = User::where('id', $request->id)->with('student', 'wallet')->first();
+        }
+
+        else if($userType == 'instructor') {
+            $user = User::where('id', $request->id)->with('instructor', 'wallet')->first();
+        }
+
+        return ResponseHelper::success("Data fetched successfully", ['user' => $user]);
+    }
 }
