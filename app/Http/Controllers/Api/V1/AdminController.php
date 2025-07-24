@@ -91,7 +91,7 @@ class AdminController extends Controller
         $wallet = Wallet::firstOrCreate(
             [
                 'user_id' => $request->id,
-                'type' => 'Student',
+                'type' => $userType,
             ]
         );
         $initialBalance = $wallet->balance;
@@ -150,7 +150,7 @@ class AdminController extends Controller
         $wallet = Wallet::firstOrCreate(
             [
                 'user_id' => $request->id,
-                'type' => 'Student',
+                'type' => $userType,
             ]
         );
 
@@ -199,6 +199,48 @@ class AdminController extends Controller
         ]);
 
         return ResponseHelper::success("Wallet debited successfully");
+    }
+
+    public function withdrawFunds(Request $request) {
+        $validator = Validator::make($request->all(), [
+            'id' => 'required|exists:users,id',
+            'amount' => 'required|integer',
+        ]);
+
+        if ($validator->fails()) {
+            $firstError = $validator->errors()->first();
+            return ResponseHelper::error($firstError, $validator->errors(), 422);
+        }
+
+        $settings = GeneralSetting::first();
+        if($request->amount < $settings->minimum_withdrawal) {
+            return ResponseHelper::error("Minimum withdrawal amount is $".$settings->minimum_withdrawal);
+        }
+
+        $wallet = Wallet::where('user_id', $request->id)->first();
+        if($wallet->balance < $request->amount) {
+            return ResponseHelper::error("Insufficient funds in wallet");
+        }
+
+        $user = User::where('id', $request->id)->first();
+        $userType = $user->type;
+
+        $message = "Funds Withdrawal";
+        $reference = Str::uuid()->toString();
+
+        $transaction = Transaction::create([
+            'user_id' => $request->id,
+            'wallet_id' => $wallet->id,
+            'type' => 'debit',
+            'amount' => $request->amount,
+            'reference' => $reference,
+            'description' => $message,
+            'user_type' => $userType,
+            'status' => 'pending',
+        ]);
+
+        return ResponseHelper::success("Request sent successfully");
+
     }
 
     public function adminCredit(Request $request) {
@@ -297,8 +339,9 @@ class AdminController extends Controller
 
         $adminWallet = Wallet::where('type', 'Admin')->first();
         $settings = GeneralSetting::first();
+        $withdrawals = Transaction::where('status', 'pending')->where('user_type', '!=', 'Admin')->get();
 
-        return ResponseHelper::success("Data fetched successfully", ['transactions' => $sortedGrouped, 'adminWallet' => $adminWallet, 'settings' => $settings]);
+        return ResponseHelper::success("Data fetched successfully", ['transactions' => $sortedGrouped, 'adminWallet' => $adminWallet, 'settings' => $settings, 'withdrawals' => $withdrawals]);
     }
 
     public function adminTransactions(Request $request) {
@@ -398,5 +441,64 @@ class AdminController extends Controller
         $settings->save();
 
         return ResponseHelper::success("General settings updated successfully", ['settings' => $settings]);
+    }
+
+    public function approveWithdrawal(Request $request) {
+        $validator = Validator::make($request->all(), [
+            'id' => 'required|exists:transactions,id',
+        ]);
+
+        if ($validator->fails()) {
+            $firstError = $validator->errors()->first();
+            return ResponseHelper::error($firstError, $validator->errors(), 422);
+        }
+
+        $transaction = Transaction::where('id', $request->id)->first();
+        if($transaction->status == 'approved') {
+            return ResponseHelper::error("Withdrawal request already approved");
+        }
+        if($transaction->status == 'declined') {
+            return ResponseHelper::error("Withdrawal request already declined");
+        }
+
+        $transaction->status = 'approved';
+        $transaction->processed_at = Carbon::now();
+        $transaction->save();
+
+        $user = User::where('id', $transaction->user_id)->first();
+        $userType = $user->type;
+
+        $wallet = Wallet::where('user_id', $transaction->user_id)->first();
+        $newBalance = $wallet->balance - $transaction->amount;
+        if($newBalance < 0) {
+            return ResponseHelper::error("Insufficient funds in wallet");
+        }
+
+        $wallet->balance = $newBalance;
+        $wallet->save();
+
+        return ResponseHelper::success("Withdrawal Aproved Successfully");
+    }
+
+    public function rejectWithdrawal(Request $request) {
+        $validator = Validator::make($request->all(), [
+            'id' => 'required|exists:transactions,id',
+        ]);
+
+        if ($validator->fails()) {
+            $firstError = $validator->errors()->first();
+            return ResponseHelper::error($firstError, $validator->errors(), 422);
+        }
+
+        $transaction = Transaction::where('id', $request->id)->first();
+        if($transaction->status == 'rejected') {
+            return ResponseHelper::error("Withdrawal request already declined");
+        }
+
+        $transaction->status = 'declined';
+        $transaction->processed_at = Carbon::now();
+        $transaction->save();
+
+        return ResponseHelper::success("Withdrawal Declined Successfully");
     }
 }

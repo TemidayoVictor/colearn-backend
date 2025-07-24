@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\V1\CourseController;
 use App\Http\Controllers\Api\V1\ConsultantController;
 use App\Http\Controllers\Api\V1\SettingsController;
 use App\Http\Controllers\Api\V1\AdminController;
+use App\Http\Controllers\Api\V1\UserController;
 
 Route::prefix('v1')->group(function () {
     // Sign up
@@ -142,9 +143,16 @@ Route::prefix('v1')->group(function () {
         Route::post('/deactivate-account', [SettingsController::class, 'deactivateAccount']);
         Route::post('/reactivate-account', [SettingsController::class, 'reactivateAccount']);
 
+        // User Routes
+        Route::post('/get-user-transactions', [UserController::class, 'getUserTransactions']);
+
         // Admin Routes
         Route::post('/credit-wallet', [AdminController::class, 'creditWallet']);
         Route::post('/debit-wallet', [AdminController::class, 'debitWallet']);
+        Route::post('/withdraw-funds', [AdminController::class, 'withdrawFunds']);
+
+        Route::post('/approve-withdrawal', [AdminController::class, 'approveWithdrawal']);
+        Route::post('/reject-withdrawal', [AdminController::class, 'rejectWithdrawal']);
 
         Route::post('/admin-credit', [AdminController::class, 'adminCredit']);
         Route::post('/admin-debit', [AdminController::class, 'adminDebit']);
