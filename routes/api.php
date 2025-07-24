@@ -163,4 +163,5 @@ Route::prefix('v1')->group(function () {
 
     // Utilities
     Route::post('/get-countries', [UtilitiesController::class, 'countries']);
+    Route::get('/download-resource/{filename}/{title}', [UtilitiesController::class, 'downloadResource']);
 });

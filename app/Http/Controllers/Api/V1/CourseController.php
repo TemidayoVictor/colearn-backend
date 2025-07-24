@@ -660,7 +660,7 @@ class CourseController extends Controller
             ]);
         }
 
-        $courseId = (int) $request->courseId ?? 0;
+        $courseId = (int) ($request->courseId ?? 0);
 
         $nextVideo = CoursesVideo::where('overall_order', '>', $overallOrder)
         ->whereHas('module', function ($query) use ($courseId) {
