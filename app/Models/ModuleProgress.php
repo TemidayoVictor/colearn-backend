@@ -25,5 +25,4 @@ class ModuleProgress extends Model
         return $this->belongsTo(CoursesSection::class, 'course_section_id');
     }
 
-
 }

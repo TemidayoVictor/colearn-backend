@@ -15,6 +15,7 @@ use App\Models\GeneralSetting;
 use App\Models\Enrollment;
 use App\Models\Course;
 use App\Models\Instructor;
+use App\Models\VideoProgress;
 
 class UserController extends Controller
 {
@@ -54,15 +55,42 @@ class UserController extends Controller
             return ResponseHelper::error($firstError, $validator->errors(), 422);
         }
 
-        $enrollments = Enrollment::where('user_id', $request->id)->with('course.instructor.user')->get();
+        $userId = $request->id;
 
-        $popularCourses = Course::inRandomOrder()->take(4)->get();
-        $instructors = Instructor::inRandomOrder()->take(4)->get();
+        $enrollments = Enrollment::where('user_id', $userId)
+        ->with('course.instructor.user')
+        ->get()
+        ->map(function ($enrollment) use ($userId) {
+            $course = $enrollment->course;
+
+            // Count completed videos for this course by this user
+            $completedCount = VideoProgress::where('course_id', $course->id)
+                ->where('user_id', $userId)
+                ->whereNotNull('completed_at')
+                ->count();
+
+            $totalVideos = (int) $course->videos_count;
+
+            $progress = $totalVideos > 0
+                ? round(($completedCount / $totalVideos) * 100, 2)
+                : 0;
+
+            return [
+                'course' => $course,
+                'progress' => $progress,
+                'enrollment' => $enrollment,
+            ];
+        });
+
+        $popularCourses = Course::with('instructor.user')->inRandomOrder()->take(4)->get();
+        $instructors = Instructor::with('user')->inRandomOrder()->take(4)->get();
+        $totalProgress = $enrollments->avg('progress');
 
         return ResponseHelper::success("Data fetched successfully", [
             'enrollments' => $enrollments,
             'popularCourses' => $popularCourses,
             'instructors' => $instructors,
+            'totalProgress' => round($totalProgress, 0),
         ]);
     }
 }
