@@ -20,6 +20,7 @@ class Course extends Model
         'videos_count',
         'total_duration',
         'level',
+        'summary',
     ];
 
     public function instructor()

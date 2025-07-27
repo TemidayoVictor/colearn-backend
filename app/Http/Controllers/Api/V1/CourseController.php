@@ -65,6 +65,7 @@ class CourseController extends Controller
             'course_picture' => 'required|image|mimes:jpeg,png,jpg|max:2048',
             'total_duration' => 'required',
             'level' => 'required',
+            'summary' => 'required|string|max:500',
         ]);
 
         if ($validator->fails()) {
@@ -100,6 +101,7 @@ class CourseController extends Controller
             'is_free' => $checkFree,
             'total_duration' => $request->total_duration,
             'level' => $request->level,
+            'summary' => $request->summary,
         ]);
 
         $categories = $request->categories;
@@ -127,6 +129,7 @@ class CourseController extends Controller
             'course_picture' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
             'total_duration' => 'required',
             'level' => 'required',
+            'summary' => 'required|string|max:500',
         ]);
 
         Log::info($request);
@@ -164,6 +167,7 @@ class CourseController extends Controller
         $course->thumbnail = $path;
         $course->total_duration = $request->total_duration;
         $course->level = $request->level;
+        $course->summary = $request->summary;
         $course->save();
 
         // fetch and delete all previous categories
@@ -207,6 +211,21 @@ class CourseController extends Controller
             'modules.videos.progresses',
             'resources'
         ])->where('id', $request->courseId)->first();
+
+        return ResponseHelper::success('Data fetched successfully', ['course' => $courseUse]);
+    }
+
+    public function getCourseStudent(Request $request) {
+        $validator = Validator::make($request->all(), [
+            'courseId' => 'required|exists:courses,id',
+        ]);
+
+        if ($validator->fails()) {
+            $firstError = $validator->errors()->first();
+            return ResponseHelper::error($firstError, $validator->errors(), 422);
+        }
+
+        $course = Course::with('reviews')->where('id', $request->courseId)->first();
 
         return ResponseHelper::success('Data fetched successfully', ['course' => $courseUse]);
     }

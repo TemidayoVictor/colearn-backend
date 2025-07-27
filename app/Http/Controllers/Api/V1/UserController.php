@@ -83,7 +83,13 @@ class UserController extends Controller
         });
 
         $popularCourses = Course::with('instructor.user')->inRandomOrder()->take(4)->get();
-        $instructors = Instructor::with('user')->inRandomOrder()->take(4)->get();
+        $instructors = Instructor::whereHas('user', function ($query) {
+            $query->where('profile_progress', 'completed');
+        })
+        ->with('user')
+        ->inRandomOrder()
+        ->take(4)
+        ->get();
         $totalProgress = $enrollments->avg('progress');
 
         return ResponseHelper::success("Data fetched successfully", [
