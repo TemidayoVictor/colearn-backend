@@ -339,7 +339,7 @@ class AdminController extends Controller
 
         $adminWallet = Wallet::where('type', 'Admin')->first();
         $settings = GeneralSetting::first();
-        $withdrawals = Transaction::where('status', 'pending')->where('user_type', '!=', 'Admin')->get();
+        $withdrawals = Transaction::where('status', 'pending')->where('user_type', '!=', 'Admin')->with('user', 'wallet')->get();
 
         return ResponseHelper::success("Data fetched successfully", ['transactions' => $sortedGrouped, 'adminWallet' => $adminWallet, 'settings' => $settings, 'withdrawals' => $withdrawals]);
     }

@@ -145,6 +145,7 @@ Route::prefix('v1')->group(function () {
 
         // User Routes
         Route::post('/get-user-transactions', [UserController::class, 'getUserTransactions']);
+        Route::post('/student-dashboard', [UserController::class, 'studentDashboard']);
 
         // Admin Routes
         Route::post('/credit-wallet', [AdminController::class, 'creditWallet']);
