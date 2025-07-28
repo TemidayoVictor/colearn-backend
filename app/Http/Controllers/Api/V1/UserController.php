@@ -82,7 +82,7 @@ class UserController extends Controller
             ];
         });
 
-        $popularCourses = Course::with('instructor.user')->inRandomOrder()->take(4)->get();
+        $popularCourses = Course::with('instructor.user')->where('is_published', true)->inRandomOrder()->take(4)->get();
         $instructors = Instructor::whereHas('user', function ($query) {
             $query->where('profile_progress', 'completed');
         })

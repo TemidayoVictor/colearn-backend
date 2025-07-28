@@ -34,7 +34,7 @@ class CourseController extends Controller
 {
     //Course functions
     public function allCourses(Request $request) {
-        $courses = Course::with('instructor.user')->inRandomOrder()->take(18)->get();
+        $courses = Course::with('instructor.user')->where('is_published', true)->inRandomOrder()->take(18)->get();
         return ResponseHelper::success('Courses fetched successfully', ['courses' => $courses]);
     }
 
@@ -225,9 +225,9 @@ class CourseController extends Controller
             return ResponseHelper::error($firstError, $validator->errors(), 422);
         }
 
-        $course = Course::with('reviews')->where('id', $request->courseId)->first();
+        $course = Course::with('reviews.user', 'enrollments')->where('id', $request->courseId)->first();
 
-        return ResponseHelper::success('Data fetched successfully', ['course' => $courseUse]);
+        return ResponseHelper::success('Data fetched successfully', ['course' => $course]);
     }
 
     public function getCourseEdit(Request $request) {
