@@ -99,4 +99,22 @@ class UserController extends Controller
             'totalProgress' => round($totalProgress, 0),
         ]);
     }
+
+    public function userProfile(Request $request) {
+        $validator = Validator::make($request->all(), [
+            'id' => 'required|exists:users,id',
+        ]);
+
+        if ($validator->fails()) {
+            $firstError = $validator->errors()->first();
+            return ResponseHelper::error($firstError, $validator->errors(), 422);
+        }
+
+        $userId = $request->id;
+        $user = User::with('student')->where('id', $userId)->first();
+        $completedCourses = Enrollment::where('user_id', $userId)->whereNotNull('completed_at')->count();
+
+        return ResponseHelper::success("Data fetched successfully", ['user' => $user, 'completedCourses' => $completedCourses]);
+
+    }
 }
