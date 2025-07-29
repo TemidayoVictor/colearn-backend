@@ -154,11 +154,54 @@ class UserController extends Controller
             ->whereNotNull('completed_at')
             ->count();
 
+        // 5. Wallet Balance
+        $wallet = Wallet::where('user_id', $userId)->first();
+
+        // 6. Monthly Earnings
+        $monthlyEarnings = DB::table('transactions')
+        ->select(
+            DB::raw('MONTH(created_at) as month'),
+            DB::raw('SUM(amount) as total')
+        )
+        ->where('user_id', $userId)
+        ->where('type', 'credit')
+        ->groupBy(DB::raw('MONTH(created_at)'))
+        ->pluck('total', 'month');
+
+        // Initialize all months to 0
+        $earnings = [];
+
+        for ($i = 1; $i <= 12; $i++) {
+            $earnings[] = $monthlyEarnings[$i] ?? 0;
+        }
+
+        // 7. Total Revenue
+        $totalRevenue = DB::table('transactions')
+        ->where('user_id', $userId)
+        ->where('type', 'credit')
+        ->sum('amount');
+
+        $courses = Course::withCount([
+            'enrollments as total_enrollments',
+            'enrollments as total_completions' => function ($query) {
+                $query->whereNotNull('completed_at');
+            },
+            'reviews as review_count',
+        ])
+        ->withSum('cart as total_revenue', 'purchase_price') // from carts
+        ->withAvg('reviews as average_rating', 'rating') // from reviews
+        ->where('instructor_id', $instructorId)
+        ->get();
+
         return ResponseHelper::success("Data fetched successfully", [
             'total_sales_amount' => $totalSalesAmount,
             'total_courses_uploaded' => $totalCourses,
             'total_enrollments' => $totalEnrollments,
             'total_courses_completed' => $totalCompleted,
+            'wallet' => $wallet,
+            'earnings' => $earnings,
+            'total_revenue' => $totalRevenue,
+            'courses' => $courses,
         ]);
     }
 }
