@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use App\Helpers\ResponseHelper;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 
 use App\Models\User;
 use App\Models\Transaction;
@@ -115,6 +116,49 @@ class UserController extends Controller
         $completedCourses = Enrollment::where('user_id', $userId)->whereNotNull('completed_at')->count();
 
         return ResponseHelper::success("Data fetched successfully", ['user' => $user, 'completedCourses' => $completedCourses]);
+    }
 
+    public function instructorDashboard(Request $request) {
+        $validator = Validator::make($request->all(), [
+            'id' => 'required|exists:users,id',
+        ]);
+
+        if ($validator->fails()) {
+            $firstError = $validator->errors()->first();
+            return ResponseHelper::error($firstError, $validator->errors(), 422);
+        }
+
+        $userId = $request->id;
+        $instructor = Instructor::with('courses')->where('user_id', $userId)->first();
+        $instructorId = $instructor->id;
+
+        $courseIds = $instructor->courses->pluck('id')->toArray();
+
+        // 1. Total Sales Amount
+        $totalSalesAmount = DB::table('cart')
+            ->whereIn('course_id', $courseIds)
+            ->where('status', 'checked_out')
+            ->sum('purchase_price');
+
+        // 2. Total Course Uploads
+        $totalCourses = count($courseIds);
+
+        // 3. Total Enrollments
+        $totalEnrollments = DB::table('enrollments')
+            ->whereIn('course_id', $courseIds)
+            ->count();
+
+        // 4. Total Courses Completed
+        $totalCompleted = DB::table('enrollments')
+            ->whereIn('course_id', $courseIds)
+            ->whereNotNull('completed_at')
+            ->count();
+
+        return ResponseHelper::success("Data fetched successfully", [
+            'total_sales_amount' => $totalSalesAmount,
+            'total_courses_uploaded' => $totalCourses,
+            'total_enrollments' => $totalEnrollments,
+            'total_courses_completed' => $totalCompleted,
+        ]);
     }
 }
