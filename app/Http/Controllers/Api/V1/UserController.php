@@ -17,6 +17,7 @@ use App\Models\Enrollment;
 use App\Models\Course;
 use App\Models\Instructor;
 use App\Models\VideoProgress;
+use App\Models\Review;
 
 class UserController extends Controller
 {
@@ -193,6 +194,13 @@ class UserController extends Controller
         ->where('instructor_id', $instructorId)
         ->get();
 
+        $reviews = Review::whereIn('course_id', $courseIds)->get();
+        // Total number of reviews
+        $totalReviews = $reviews->count();
+
+        // Overall rating (average)
+        $overallRating = $totalReviews > 0 ? round($reviews->avg('rating'), 1) : 0;
+
         return ResponseHelper::success("Data fetched successfully", [
             'total_sales_amount' => $totalSalesAmount,
             'total_courses_uploaded' => $totalCourses,
@@ -202,6 +210,8 @@ class UserController extends Controller
             'earnings' => $earnings,
             'total_revenue' => $totalRevenue,
             'courses' => $courses,
+            'total_reviews' => $totalReviews,
+            'total_average_rating' => $overallRating,
         ]);
     }
 }
