@@ -17,10 +17,40 @@ use App\Models\User;
 use App\Models\Transaction;
 use App\Models\Wallet;
 use App\Models\GeneralSetting;
+use App\Models\Instructor;
 
 class AdminController extends Controller
 {
     //
+    public function adminDashboard(Request $request) {
+        $totalStudents = User::where('type', 'student')->count();
+
+        // Active students — adjust criteria as needed
+        $activeStudents = User::where('type', 'student')
+        ->whereHas('enrollments')
+        ->count();
+
+        // Prevent division by zero
+        $percentageStudentActive = $totalStudents > 0
+        ? round(($activeStudents / $totalStudents) * 100, 2)
+        : 0;
+
+        $totalInstructors = Instructor::get()->count();
+        // Active instructors — adjust criteria as needed
+        $activeInstructors = Instructor::whereHas('courses')->count();
+
+        // Prevent division by zero
+        $percentageInstructorsActive = $totalInstructors > 0
+        ? round(($activeInstructors / $totalInstructors) * 100, 2)
+        : 0;
+
+        return ResponseHelper::success("Data fetched successfully", [
+            'percentage_student_active' => $percentageStudentActive,
+            'percentage_instructors_active' => $percentageInstructorsActive,
+        ]);
+
+    }
+
     public function addAdmin(Request $request) {
         $validator = Validator::make($request->all(), [
             'first_name' => 'required',

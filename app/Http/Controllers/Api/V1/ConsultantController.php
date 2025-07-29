@@ -257,7 +257,7 @@ class ConsultantController extends Controller
         }
 
         $instructor = Instructor::where('id', $request->instructorId)->first();
-        $instructor->consultant = true;
+        $instructor->consultant_active = true;
         $instructor->save();
 
         // check if consultant account already exists
