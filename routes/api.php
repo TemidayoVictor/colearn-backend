@@ -151,7 +151,7 @@ Route::prefix('v1')->group(function () {
         Route::post('/instructor-dashboard', [UserController::class, 'instructorDashboard']);
 
         // Admin Routes
-        Route::post('/admin-dashboard', [AdminController::class, 'adminDashboard']);
+        Route::get('/admin-dashboard', [AdminController::class, 'adminDashboard']);
 
         Route::post('/credit-wallet', [AdminController::class, 'creditWallet']);
         Route::post('/debit-wallet', [AdminController::class, 'debitWallet']);

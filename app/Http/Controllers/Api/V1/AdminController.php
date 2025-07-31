@@ -12,22 +12,29 @@ use App\Helpers\ResponseHelper;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB;
 
 use App\Models\User;
 use App\Models\Transaction;
 use App\Models\Wallet;
 use App\Models\GeneralSetting;
 use App\Models\Instructor;
+use App\Models\Consultant;
+use App\Models\Course;
 
 class AdminController extends Controller
 {
     //
-    public function adminDashboard(Request $request) {
+    public function adminDashboard() {
         $totalStudents = User::where('type', 'student')->count();
 
         // Active students — adjust criteria as needed
         $activeStudents = User::where('type', 'student')
         ->whereHas('enrollments')
+        ->count();
+
+        $newStudents = User::where('type', 'student')
+        ->where('created_at', '>=', now()->subDays(7))
         ->count();
 
         // Prevent division by zero
@@ -36,17 +43,85 @@ class AdminController extends Controller
         : 0;
 
         $totalInstructors = Instructor::get()->count();
-        // Active instructors — adjust criteria as needed
         $activeInstructors = Instructor::whereHas('courses')->count();
+        $newInstructors = Instructor::where('created_at', '>=', now()->subDays(7))->count();
+
+        $totalConsultants = Consultant::get()->count();
+        $activeConsultants = Consultant::whereHas('bookings')->count();
+        $newConsultants = Consultant::where('created_at', '>=', now()->subDays(7))->count();
 
         // Prevent division by zero
         $percentageInstructorsActive = $totalInstructors > 0
         ? round(($activeInstructors / $totalInstructors) * 100, 2)
         : 0;
 
+        $totalSalesAmount = DB::table('cart')
+        ->where('status', 'checked_out')
+        ->sum('purchase_price');
+
+        $monthlySalesAmount = DB::table('cart')
+        ->where('status', 'checked_out')
+        ->whereMonth('created_at', Carbon::now()->month)
+        ->whereYear('created_at', Carbon::now()->year)
+        ->sum('purchase_price');
+
+        $totalConsultationAmount =Transaction::where('description', 'like', 'Consultation Session between%')
+        ->where('user_type', 'Admin')
+        ->sum('amount');
+
+        $monthlyEarnings = DB::table('transactions')
+        ->select(
+            DB::raw('MONTH(created_at) as month'),
+            DB::raw('SUM(amount) as total')
+        )
+        ->where('user_type', 'Admin')
+        ->where('type', 'credit')
+        ->groupBy(DB::raw('MONTH(created_at)'))
+        ->pluck('total', 'month');
+
+        // Initialize all months to 0
+        $earnings = [];
+
+        for ($i = 1; $i <= 12; $i++) {
+            $earnings[] = $monthlyEarnings[$i] ?? 0;
+        }
+
+        $totalRevenue = DB::table('transactions')
+        ->where('user_type', 'Admin')
+        ->where('type', 'credit')
+        ->sum('amount');
+
+        $usersByCountry = DB::table('users')
+        ->select('country_iso3', DB::raw('count(*) as user_count'))
+        ->whereNotNull('country_iso3')
+        ->groupBy('country_iso3')
+        ->orderByDesc('user_count')
+        ->get();
+
+        $topCourses = Course::withCount('enrollments')
+        ->orderByDesc('enrollments_count')
+        ->take(6)
+        ->get();
+
         return ResponseHelper::success("Data fetched successfully", [
             'percentage_student_active' => $percentageStudentActive,
             'percentage_instructors_active' => $percentageInstructorsActive,
+            'total_sales_amount' => $totalSalesAmount,
+            'monthly_sales_amount' => $monthlySalesAmount,
+            'total_consultation_amount' => $totalConsultationAmount,
+            'total_students' => $totalStudents,
+            'active_students' => $activeStudents,
+            'total_instructors' => $totalInstructors,
+            'active_instructors' => $activeInstructors,
+            'total_consultants' => $totalConsultants,
+            'active_consultants' => $activeConsultants,
+            'new_students' => $newStudents,
+            'new_instructors' => $newInstructors,
+            'new_consultants' => $newConsultants,
+            'earnings' => $earnings,
+            'total_revenue' => $totalRevenue,
+            'users_by_country' => $usersByCountry,
+            'top_courses' => $topCourses,
         ]);
 
     }
