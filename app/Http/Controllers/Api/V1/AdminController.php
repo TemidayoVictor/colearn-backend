@@ -549,6 +549,57 @@ class AdminController extends Controller
         return ResponseHelper::success("Data fetched successfully", ['users' => $users]);
     }
 
+    public function allUnapprovedConsultants() {
+        $instructors = Instructor::where('consultant_progress', 4)->with('user')->get();
+        $totalUsers = User::where('type', '!=', 'Admin')->count();
+        $pendingConsultants = Instructor::where('consultant_progress', 4)->count();
+        $verifiedConsultants = Instructor::where('consultant_progress', 5)->count();
+        $declinedConsultants = Instructor::where('consultant_progress', 6)->count();
+        $data = [
+            'total_users' => $totalUsers,
+            'total_pending_consultants' => $pendingConsultants,
+            'total_verified_consultants' => $verifiedConsultants,
+            'total_declined_consultants' => $declinedConsultants
+        ];
+        return ResponseHelper::success("Data fetched successfully", ['instructors' => $instructors, 'data' => $data]);
+    }
+
+    public function approveConsultant(Request $request) {
+        $validator = Validator::make($request->all(), [
+            'instructorId' => 'required|exists:instructors,id',
+        ]);
+
+        if ($validator->fails()) {
+            $firstError = $validator->errors()->first();
+            return ResponseHelper::error($firstError, $validator->errors(), 422);
+        }
+
+        $instructor = Instructor::where('id', $request->instructorId)->first();
+        $instructor->consultant_progress = 4;
+        $instructor->save();
+
+        return ResponseHelper::success('Application approved successfully', ['instructor' => $instructor]);
+
+    }
+
+    public function declineConsultant(Request $request) {
+        $validator = Validator::make($request->all(), [
+            'instructorId' => 'required|exists:instructors,id',
+        ]);
+
+        if ($validator->fails()) {
+            $firstError = $validator->errors()->first();
+            return ResponseHelper::error($firstError, $validator->errors(), 422);
+        }
+
+        $instructor = Instructor::where('id', $request->instructorId)->first();
+        $instructor->consultant_progress = 6;
+        $instructor->save();
+
+        return ResponseHelper::success('Application declined successfully', ['instructor' => $instructor]);
+
+    }
+
     public function getUserDetails(Request $request) {
         $validator = Validator::make($request->all(), [
             'id' => 'required|exists:users,id',
@@ -564,13 +615,63 @@ class AdminController extends Controller
 
         if($userType == 'student') {
             $user = User::where('id', $request->id)->with('student', 'wallet')->first();
+            return ResponseHelper::success("Data fetched successfully", ['user' => $user, 'data' => []]);
         }
 
         else if($userType == 'instructor') {
             $user = User::where('id', $request->id)->with('instructor', 'wallet')->first();
         }
 
-        return ResponseHelper::success("Data fetched successfully", ['user' => $user]);
+        $instructor = Instructor::with('courses')->where('user_id', $request->id)->first();
+        $instructorId = $instructor->id;
+
+        $courseIds = $instructor->courses->pluck('id')->toArray();
+
+        // 1. Total Sales Amount
+        $totalSalesAmount = DB::table('cart')
+            ->whereIn('course_id', $courseIds)
+            ->where('status', 'checked_out')
+            ->sum('purchase_price');
+
+        // 2. Total Course Uploads
+        $totalCourses = count($courseIds);
+
+        // 3. Total Enrollments
+        $totalEnrollments = DB::table('enrollments')
+            ->whereIn('course_id', $courseIds)
+            ->count();
+
+        // 4. Total Courses Completed
+        $totalCompleted = DB::table('enrollments')
+            ->whereIn('course_id', $courseIds)
+            ->whereNotNull('completed_at')
+            ->count();
+
+        $courses = Course::withCount([
+            'enrollments as total_enrollments',
+            'enrollments as total_completions' => function ($query) {
+                $query->whereNotNull('completed_at');
+            },
+            'reviews as review_count',
+        ])
+        ->withSum('cart as total_revenue', 'purchase_price') // from carts
+        ->withAvg('reviews as average_rating', 'rating') // from reviews
+        ->where('instructor_id', $instructorId)
+        ->get();
+
+        $data = [
+            'total_sales_amount' => $totalSalesAmount,
+            'total_courses_uploaded' => $totalCourses,
+            'total_enrollments' => $totalEnrollments,
+            'total_courses_completed' => $totalCompleted,
+            'courses' => $courses,
+        ];
+
+        return ResponseHelper::success("Data fetched successfully", [
+            'user' => $user,
+            'instructor' => $instructor,
+            'data' => $data
+        ]);
     }
 
     public function updateGeneralSettings(Request $request) {

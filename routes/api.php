@@ -172,6 +172,10 @@ Route::prefix('v1')->group(function () {
         Route::get('/all-users-admin', [AdminController::class, 'allUsers']);
         Route::post('/get-user-details', [AdminController::class, 'getUserDetails']);
 
+        Route::get('/all-unapproved-consultants', [AdminController::class, 'allUnapprovedConsultants']);
+        Route::post('/approve-consultant', [AdminController::class, 'approveConsultant']);
+        Route::post('/decline-consultant', [AdminController::class, 'declineConsultant']);
+
         Route::post('/update-general-settings', [AdminController::class, 'updateGeneralSettings']);
 
     });
