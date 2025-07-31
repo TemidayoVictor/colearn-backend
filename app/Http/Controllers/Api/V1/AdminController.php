@@ -21,6 +21,9 @@ use App\Models\GeneralSetting;
 use App\Models\Instructor;
 use App\Models\Consultant;
 use App\Models\Course;
+use App\Models\Cart;
+use App\Models\Enrollment;
+use App\Models\Review;
 
 class AdminController extends Controller
 {
@@ -124,6 +127,50 @@ class AdminController extends Controller
             'top_courses' => $topCourses,
         ]);
 
+    }
+
+    public function adminCourses() {
+        $totalSalesAmount = Cart::where('coupon_status', 'completed')->sum('purchase_price');
+        $totalCourses = Course::count();
+        $totalCoursesPublished = Course::where('is_published', true)->count();
+        $totalCompletedCourses = Enrollment::whereNotNull('completed_at')->count();
+        $totalEnrollments = Enrollment::count();
+        $totalReviews = Review::count();
+
+        $courses = Course::withCount([
+            'enrollments as total_enrollments',
+            'enrollments as total_completions' => function ($query) {
+                $query->whereNotNull('completed_at');
+            },
+            'reviews as review_count',
+        ])
+        ->withSum('cart as total_revenue', 'purchase_price') // from carts
+        ->withAvg('reviews as average_rating', 'rating') // from reviews
+        ->with('instructor.user')
+        ->get();
+
+        $topInstructors = Instructor::with('courses', 'user')
+        ->withSum('totalSales as total_sales', 'purchase_price')
+        ->orderByDesc('total_sales')
+        ->take(6)
+        ->get();
+
+        $topCourses = Course::withCount('enrollments')
+        ->orderByDesc('enrollments_count')
+        ->take(6)
+        ->get();
+
+        return ResponseHelper::success("Data fetched successfully", [
+            'total_sales_amount' => $totalSalesAmount,
+            'total_courses_uploaded' => $totalCourses,
+            'total_courses_published' => $totalCoursesPublished,
+            'total_courses_completed' => $totalCompletedCourses,
+            'total_reviews' => $totalReviews,
+            'top_instructors' => $topInstructors,
+            'top_courses' => $topCourses,
+            'total_enrollments' => $totalEnrollments,
+            'courses' => $courses,
+        ]);
     }
 
     public function addAdmin(Request $request) {

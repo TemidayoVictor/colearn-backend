@@ -63,4 +63,16 @@ class Instructor extends Model
         return $this->hasOne(Consultant::class);
     }
 
+    public function totalSales()
+{
+    return $this->hasManyThrough(
+        \App\Models\Cart::class,
+        \App\Models\Course::class,
+        'instructor_id', // Foreign key on courses table
+        'course_id',     // Foreign key on cart table
+        'id',            // Local key on instructor
+        'id'             // Local key on course
+    )->where('cart.status', 'checked_out');
+}
+
 }
