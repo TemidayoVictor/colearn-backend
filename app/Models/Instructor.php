@@ -31,6 +31,7 @@ class Instructor extends Model
         'intro_video_url',
         'consultant_progress',
         'experience_years',
+        'reason',
     ];
 
     public function user()

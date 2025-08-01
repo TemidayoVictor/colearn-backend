@@ -13,6 +13,7 @@ return new class extends Migration
     {
         Schema::table('instructors', function (Blueprint $table) {
             //
+            $table->text('reason')->nullable();
         });
     }
 
@@ -23,6 +24,7 @@ return new class extends Migration
     {
         Schema::table('instructors', function (Blueprint $table) {
             //
+            $table->dropColumn('reason');
         });
     }
 };

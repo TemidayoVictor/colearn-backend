@@ -585,6 +585,7 @@ class AdminController extends Controller
     public function declineConsultant(Request $request) {
         $validator = Validator::make($request->all(), [
             'instructorId' => 'required|exists:instructors,id',
+            'reason' => 'required',
         ]);
 
         if ($validator->fails()) {
@@ -594,6 +595,7 @@ class AdminController extends Controller
 
         $instructor = Instructor::where('id', $request->instructorId)->first();
         $instructor->consultant_progress = 6;
+        $instructor->reason = $request->reason;
         $instructor->save();
 
         return ResponseHelper::success('Application declined successfully', ['instructor' => $instructor]);
