@@ -622,7 +622,7 @@ class AdminController extends Controller
             $user = User::where('id', $request->id)->with('instructor', 'wallet')->first();
         }
 
-        $instructor = Instructor::with('courses')->where('user_id', $request->id)->first();
+        $instructor = Instructor::with('courses', 'experience', 'schools')->where('user_id', $request->id)->first();
         $instructorId = $instructor->id;
 
         $courseIds = $instructor->courses->pluck('id')->toArray();
