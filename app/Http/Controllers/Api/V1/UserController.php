@@ -214,4 +214,8 @@ class UserController extends Controller
             'total_average_rating' => $overallRating,
         ]);
     }
+
+    public function webData() {
+        return ResponseHelper::success("Data fetched successfully", []);
+    }
 }

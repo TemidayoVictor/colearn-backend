@@ -5,6 +5,7 @@ use Illuminate\Http\Request;
 use App\Http\Controllers\Api\V1\Auth\SignUpController;
 use App\Http\Controllers\Api\V1\Auth\AuthMiddlewareController;
 use App\Http\Controllers\Api\V1\Auth\AuthController;
+use App\Http\Controllers\Api\V1\UserController;
 
 Route::get('/', function () {
     return view('welcome');
@@ -16,6 +17,8 @@ Route::get('/', function () {
 // });
 
 Route::post('/login', [AuthController::class, 'login']);
+
+Route::get('/web-data', [UserController::class, 'webData']);
 
 Route::middleware('auth:sanctum')->group(function () {
     // authenticate user
