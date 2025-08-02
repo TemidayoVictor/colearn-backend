@@ -616,8 +616,11 @@ class AdminController extends Controller
         $userType = $user->type;
 
         if($userType == 'student') {
-            $user = User::where('id', $request->id)->with('student', 'wallet')->first();
-            return ResponseHelper::success("Data fetched successfully", ['user' => $user, 'data' => []]);
+            $user = User::where('id', $request->id)->with('student', 'wallet', 'enrollments')->first();
+            $enrollments = Enrollment::where('user_id', $request->id)->with('course')->get();
+            return ResponseHelper::success("Data fetched successfully", ['user' => $user, 'data' => [
+                'enrollments' => $enrollments
+            ]]);
         }
 
         else if($userType == 'instructor') {
@@ -667,6 +670,7 @@ class AdminController extends Controller
             'total_enrollments' => $totalEnrollments,
             'total_courses_completed' => $totalCompleted,
             'courses' => $courses,
+            'enrollments' => [],
         ];
 
         return ResponseHelper::success("Data fetched successfully", [
