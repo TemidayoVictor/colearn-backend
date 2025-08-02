@@ -16,8 +16,10 @@ use App\Models\GeneralSetting;
 use App\Models\Enrollment;
 use App\Models\Course;
 use App\Models\Instructor;
+use App\Models\Consultant;
 use App\Models\VideoProgress;
 use App\Models\Review;
+use App\Models\Category;
 
 class UserController extends Controller
 {
@@ -216,6 +218,15 @@ class UserController extends Controller
     }
 
     public function webData() {
-        return ResponseHelper::success("Data fetched successfully", []);
+        $categories = Category::all();
+        $courses = Course::with('instructor.user')->where('is_published', true)->inRandomOrder()->take(6)->get();
+        $instructors = Instructor::with('user')->inRandomOrder()->take(6)->get();
+        $consultants = Consultant::with('instructor.user')->inRandomOrder()->take(6)->get();
+        return ResponseHelper::success("Data fetched successfully", [
+            'categories' => $categories,
+            'courses' => $courses,
+            'instructors' => $instructors,
+            'consultants' => $consultants,
+        ]);
     }
 }
