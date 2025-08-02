@@ -193,12 +193,15 @@ class CourseController extends Controller
     public function getCourse(Request $request) {
         $validator = Validator::make($request->all(), [
             'courseId' => 'required|exists:courses,id',
+            'userId'   => 'required|exists:users,id',
         ]);
 
         if ($validator->fails()) {
             $firstError = $validator->errors()->first();
             return ResponseHelper::error($firstError, $validator->errors(), 422);
         }
+
+        $userId = $request->userId;
 
         $courseUse = Course::with([
             'modules' => function ($query) {
@@ -207,8 +210,12 @@ class CourseController extends Controller
             'modules.videos' => function ($query) {
                 $query->orderBy('order');
             },
-            'modules.progresses',
-            'modules.videos.progresses',
+            'modules.progresses' => function ($query) use ($userId) {
+                $query->where('user_id', $userId);
+            },
+            'modules.videos.progresses' => function ($query) use ($userId) {
+                $query->where('user_id', $userId);
+            },
             'resources'
         ])->where('id', $request->courseId)->first();
 
