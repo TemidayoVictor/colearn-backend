@@ -219,7 +219,7 @@ class UserController extends Controller
 
     public function webData() {
         $categories = Category::all();
-        $courses = Course::with('instructor.user')->where('is_published', true)->inRandomOrder()->get();
+        $courses = Course::with('instructor.user', 'reviews.user', 'enrollments')->where('is_published', true)->inRandomOrder()->get();
         $instructors = Instructor::whereNotNull('title')->with('user')->inRandomOrder()->get(); // instructors who have completed their profile
         $consultants = Consultant::with('instructor.user')->inRandomOrder()->get();
         return ResponseHelper::success("Data fetched successfully", [
