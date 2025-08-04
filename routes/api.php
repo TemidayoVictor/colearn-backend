@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\V1\ConsultantController;
 use App\Http\Controllers\Api\V1\SettingsController;
 use App\Http\Controllers\Api\V1\AdminController;
 use App\Http\Controllers\Api\V1\UserController;
+use App\Http\Controllers\Api\V1\BlogController;
 
 Route::prefix('v1')->group(function () {
     // Sign up
@@ -177,6 +178,12 @@ Route::prefix('v1')->group(function () {
         Route::post('/decline-consultant', [AdminController::class, 'declineConsultant']);
 
         Route::post('/update-general-settings', [AdminController::class, 'updateGeneralSettings']);
+
+        // Blogs
+        Route::post('/create-blog', [BlogController::class, 'createBlog']);
+        Route::post('/edit-blog', [BlogController::class, 'editBlog']);
+        Route::post('/delete-blog', [BlogController::class, 'deleteBlog']);
+        Route::post('/get-all-blogs', [BlogController::class, 'getAllBlogs']);
 
     });
 
