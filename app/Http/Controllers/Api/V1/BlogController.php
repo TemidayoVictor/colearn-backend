@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use App\Helpers\ResponseHelper;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Storage;
 
 use App\Models\User;
 use App\Models\Blog;
@@ -14,6 +15,11 @@ use App\Models\Blog;
 class BlogController extends Controller
 {
     //
+    public function getAllBlogs() {
+        $blogs = Blog::all();
+        return ResponseHelper::success('Data fetched successfully', ['blogs' => $blogs]);
+    }
+
     public function createBlog(Request $request) {
         $validator = Validator::make($request->all(), [
             'title' => 'required|string|max:255',
@@ -51,8 +57,6 @@ class BlogController extends Controller
             'title' => 'required|string|max:255',
             'excerpt' => 'nullable|string',
             'body' => 'required|string',
-            'thumbnail' => 'required|image|max:2048',
-            'user_id' => 'required|exists:users,id',
             'id' => 'required|exists:blogs,id'
         ]);
 
@@ -79,5 +83,26 @@ class BlogController extends Controller
         ]);
 
         return ResponseHelper::success('Blog updated successfully', ['blog' => $blog]);
+    }
+
+    public function deleteBlog(Request $request) {
+        $validator = Validator::make($request->all(), [
+            'id' => 'required|exists:blogs,id'
+        ]);
+
+        if ($validator->fails()) {
+            $firstError = $validator->errors()->first();
+            return ResponseHelper::error($firstError, $validator->errors(), 422);
+        }
+
+        $blog = Blog::where('id', $request->id)->first();
+
+        if ($blog->thumbnail) {
+            Storage::disk('public')->delete($blog->thumbnail);
+        }
+
+        $blog->delete();
+
+        return ResponseHelper::success('Blog deleted successfully');
     }
 }

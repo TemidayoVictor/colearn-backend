@@ -183,7 +183,7 @@ Route::prefix('v1')->group(function () {
         Route::post('/create-blog', [BlogController::class, 'createBlog']);
         Route::post('/edit-blog', [BlogController::class, 'editBlog']);
         Route::post('/delete-blog', [BlogController::class, 'deleteBlog']);
-        Route::post('/get-all-blogs', [BlogController::class, 'getAllBlogs']);
+        Route::get('/get-all-blogs', [BlogController::class, 'getAllBlogs']);
 
     });
 
