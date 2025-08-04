@@ -220,13 +220,114 @@ class UserController extends Controller
     public function webData() {
         $categories = Category::all();
         $courses = Course::with('instructor.user', 'reviews.user', 'enrollments', 'resources')->where('is_published', true)->inRandomOrder()->get();
-        $instructors = Instructor::whereNotNull('title')->with('user')->inRandomOrder()->get(); // instructors who have completed their profile
+        $instructors = Instructor::whereNotNull('title')->with('user', 'courses.modules.videos')->inRandomOrder()->get(); // instructors who have completed their profile
         $consultants = Consultant::with('instructor.user')->inRandomOrder()->get();
         return ResponseHelper::success("Data fetched successfully", [
             'categories' => $categories,
             'courses' => $courses,
             'instructors' => $instructors,
             'consultants' => $consultants,
+        ]);
+    }
+
+    public function instructorDataWeb(Request $request) {
+        $validator = Validator::make($request->all(), [
+            'id' => 'required|exists:users,id',
+        ]);
+
+        if ($validator->fails()) {
+            $firstError = $validator->errors()->first();
+            return ResponseHelper::error($firstError, $validator->errors(), 422);
+        }
+
+        $userId = $request->id;
+        $instructor = Instructor::with('user','courses')->where('user_id', $userId)->first();
+        $instructorId = $instructor->id;
+
+        $courseIds = $instructor->courses->pluck('id')->toArray();
+
+        // 1. Total Sales Amount
+        $totalSalesAmount = DB::table('cart')
+            ->whereIn('course_id', $courseIds)
+            ->where('status', 'checked_out')
+            ->sum('purchase_price');
+
+        // 2. Total Course Uploads
+        $totalCourses = count($courseIds);
+
+        // 3. Total Enrollments
+        $totalEnrollments = DB::table('enrollments')
+            ->whereIn('course_id', $courseIds)
+            ->count();
+
+        // 4. Total Courses Completed
+        $totalCompleted = DB::table('enrollments')
+            ->whereIn('course_id', $courseIds)
+            ->whereNotNull('completed_at')
+            ->count();
+
+        // 5. Wallet Balance
+        $wallet = Wallet::where('user_id', $userId)->first();
+
+        // 6. Monthly Earnings
+        $monthlyEarnings = DB::table('transactions')
+        ->select(
+            DB::raw('MONTH(created_at) as month'),
+            DB::raw('SUM(amount) as total')
+        )
+        ->where('user_id', $userId)
+        ->where('type', 'credit')
+        ->groupBy(DB::raw('MONTH(created_at)'))
+        ->pluck('total', 'month');
+
+        // Initialize all months to 0
+        $earnings = [];
+
+        for ($i = 1; $i <= 12; $i++) {
+            $earnings[] = $monthlyEarnings[$i] ?? 0;
+        }
+
+        // 7. Total Revenue
+        $totalRevenue = DB::table('transactions')
+        ->where('user_id', $userId)
+        ->where('type', 'credit')
+        ->sum('amount');
+
+        $courses = Course::withCount([
+            'enrollments as total_enrollments',
+            'enrollments as total_completions' => function ($query) {
+                $query->whereNotNull('completed_at');
+            },
+            'reviews as review_count',
+        ])
+        ->withSum('cart as total_revenue', 'purchase_price') // from carts
+        ->withAvg('reviews as average_rating', 'rating') // from reviews
+        ->where('instructor_id', $instructorId)
+        ->get();
+
+        $reviews = Review::whereIn('course_id', $courseIds)->with('user')->get();
+        // Total number of reviews
+        $totalReviews = $reviews->count();
+
+        // Overall rating (average)
+        $overallRating = $totalReviews > 0 ? round($reviews->avg('rating'), 1) : 0;
+
+        $courses = Course::with('instructor.user')->where('instructor_id', $instructorId)->get();
+
+        return ResponseHelper::success("Data fetched successfully", [
+            'total_sales_amount' => $totalSalesAmount,
+            'total_courses_uploaded' => $totalCourses,
+            'total_enrollments' => $totalEnrollments,
+            'total_courses_completed' => $totalCompleted,
+            'wallet' => $wallet,
+            'earnings' => $earnings,
+            'total_revenue' => $totalRevenue,
+            'courses' => $courses,
+            'total_reviews' => $totalReviews,
+            'total_average_rating' => $overallRating,
+            'instructor' => $instructor,
+            'reviews' => $reviews,
+            'courses' => $courses,
         ]);
     }
 }

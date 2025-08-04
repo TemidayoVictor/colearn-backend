@@ -20,6 +20,8 @@ Route::post('/login', [AuthController::class, 'login']);
 
 Route::get('/web-data', [UserController::class, 'webData']);
 
+Route::post('/instructor-data-web', [UserController::class, 'instructorDataWeb']);
+
 Route::middleware('auth:sanctum')->group(function () {
     // authenticate user
     Route::get('/user', [AuthMiddlewareController::class, 'authenticateUser']);
