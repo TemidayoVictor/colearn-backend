@@ -185,6 +185,17 @@ Route::prefix('v1')->group(function () {
         Route::post('/delete-blog', [BlogController::class, 'deleteBlog']);
         Route::get('/get-all-blogs', [BlogController::class, 'getAllBlogs']);
 
+        // Categories
+        Route::post('/create-category', [UtilitiesController::class, 'createCategory']);
+        Route::post('/edit-category', [UtilitiesController::class, 'editCategory']);
+        Route::post('/delete-category', [UtilitiesController::class, 'deleteCategory']);
+        Route::get('/get-all-categories', [UtilitiesController::class, 'getCategories']);
+
+        // FAQs
+        Route::post('/create-faq', [UtilitiesController::class, 'createFaq']);
+        Route::post('/edit-faq', [UtilitiesController::class, 'editFaq']);
+        Route::post('/delete-faq', [UtilitiesController::class, 'deleteFaq']);
+        Route::get('/get-all-faqs', [UtilitiesController::class, 'getFaqs']);
     });
 
     // Utilities
