@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Helpers\ResponseHelper;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Validator;
 
 use App\Models\Country;
 use App\Models\Category;
@@ -134,11 +135,11 @@ class UtilitiesController extends Controller
         }
 
         $faq = Faq::create([
-            'question' => $request->name,
+            'question' => $request->question,
             'answer' => $request->answer,
         ]);
 
-        return ResponseHelper::success('FAQ created successfully', ['category' => $category]);
+        return ResponseHelper::success('FAQ created successfully', ['faq' => $faq]);
     }
 
     public function editFaq(Request $request) {
@@ -155,12 +156,12 @@ class UtilitiesController extends Controller
 
         $faq = Faq::where('id', $request->id)->first();
 
-        $update = $category->update([
-            'question' => $request->name,
+        $update = $faq->update([
+            'question' => $request->question,
             'answer' => $request->answer,
         ]);
 
-        return ResponseHelper::success('Faq updated successfully', ['category' => $category]);
+        return ResponseHelper::success('Faq updated successfully', ['faq' => $faq]);
     }
 
     public function deleteFaq(Request $request) {
