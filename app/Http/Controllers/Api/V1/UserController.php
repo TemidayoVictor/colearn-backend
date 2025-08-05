@@ -20,6 +20,7 @@ use App\Models\Consultant;
 use App\Models\VideoProgress;
 use App\Models\Review;
 use App\Models\Category;
+use App\Models\Blog;
 
 class UserController extends Controller
 {
@@ -222,11 +223,13 @@ class UserController extends Controller
         $courses = Course::with('instructor.user', 'reviews.user', 'enrollments', 'resources')->where('is_published', true)->inRandomOrder()->get();
         $instructors = Instructor::whereNotNull('title')->with('user', 'courses.modules.videos')->inRandomOrder()->get(); // instructors who have completed their profile
         $consultants = Consultant::with('instructor.user')->inRandomOrder()->get();
+        $blogs = Blog::all();
         return ResponseHelper::success("Data fetched successfully", [
             'categories' => $categories,
             'courses' => $courses,
             'instructors' => $instructors,
             'consultants' => $consultants,
+            'blogs' => $blogs
         ]);
     }
 
@@ -241,7 +244,7 @@ class UserController extends Controller
         }
 
         $userId = $request->id;
-        $instructor = Instructor::with('user','courses')->where('user_id', $userId)->first();
+        $instructor = Instructor::with('user','courses', 'consultant')->where('user_id', $userId)->first();
         $instructorId = $instructor->id;
 
         $courseIds = $instructor->courses->pluck('id')->toArray();
