@@ -22,6 +22,7 @@ use App\Models\Booking;
 use App\Models\GeneralSetting;
 use App\Models\Transaction;
 use App\Models\Wallet;
+use App\Models\InstructorReview;
 
 class ConsultantController extends Controller
 {
@@ -371,8 +372,9 @@ class ConsultantController extends Controller
             ->get();
 
         $consultants = Consultant::where('status', 'Active')->with('instructor.user')->get();
+        $reviews = InstructorReview::where('user_id', $request->userId)->get();
 
-        return ResponseHelper::success('Sessions fetched successfully', ['bookings' => $bookings, 'consultants' => $consultants]);
+        return ResponseHelper::success('Sessions fetched successfully', ['bookings' => $bookings, 'consultants' => $consultants, 'reviews' => $reviews]);
 
     }
 
