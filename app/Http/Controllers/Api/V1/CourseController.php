@@ -1371,4 +1371,94 @@ class CourseController extends Controller
 
         return ResponseHelper::success('Review submitted successfully.', ['review' => $review]);
     }
+
+    public function search(Request $request) {
+        $validator = Validator::make($request->all(), [
+            'keyword' => 'required',
+        ]);
+
+        if ($validator->fails()) {
+            $firstError = $validator->errors()->first();
+            return ResponseHelper::error($firstError, $validator->errors(), 422);
+        }
+
+        $keyword = $request->input('keyword');
+
+        $courses = Course::where(function ($query) use ($keyword) {
+            $query->where('title', 'like', "%{$keyword}%")
+                  ->orWhere('description', 'like', "%{$keyword}%");
+        })
+        ->where('is_published', true)
+        ->with('instructor.user', 'enrollments', 'reviews')
+        ->get();
+
+        return ResponseHelper::success('Data fetched successfully.', ['courses' => $courses]);
+    }
+
+
+    public function robustSearch(Request $request) {
+        // Might still need tweaking. Not yet tested
+        $query = Course::query()->with(['instructor', 'categories'])
+            ->where('is_published', true); // only published
+
+        // Keyword search (title, summary, description)
+        if ($request->filled('q')) {
+            $keyword = $request->input('q');
+            $query->where(function ($q) use ($keyword) {
+                $q->where('title', 'like', "%$keyword%")
+                ->orWhere('summary', 'like', "%$keyword%")
+                ->orWhere('description', 'like', "%$keyword%");
+            });
+        }
+
+        // Filter by level
+        if ($request->filled('level')) {
+            $query->where('level', $request->level);
+        }
+
+        // Filter by is_free (true/false)
+        if ($request->has('is_free')) {
+            $query->where('is_free', filter_var($request->is_free, FILTER_VALIDATE_BOOLEAN));
+        }
+
+        // Filter by category
+        if ($request->filled('category')) {
+            $category = $request->category;
+            $query->whereHas('categories', function ($q) use ($category) {
+                $q->where('name', $category);
+            });
+        }
+
+        // Filter by instructor name
+        if ($request->filled('instructor')) {
+            $name = $request->instructor;
+            $query->whereHas('instructor.user', function ($q) use ($name) {
+                $q->where('name', 'like', "%$name%");
+            });
+        }
+
+        // Sorting
+        switch ($request->input('sort')) {
+            case 'newest':
+                $query->orderBy('created_at', 'desc');
+                break;
+            case 'most_enrolled':
+                $query->withCount('enrollments')->orderBy('enrollments_count', 'desc');
+                break;
+            case 'free_first':
+                $query->orderBy('is_free', 'desc');
+                break;
+            default:
+                $query->orderBy('created_at', 'desc');
+        }
+
+        // Paginate
+        $courses = $query->paginate(10);
+
+        return response()->json([
+            'success' => true,
+            'data' => $courses,
+        ]);
+    }
+
 }

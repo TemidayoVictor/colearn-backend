@@ -102,6 +102,10 @@ Route::prefix('v1')->group(function () {
         // Reviews
         Route::post('/review', [CourseController::class, 'review']);
 
+        // Course search
+        Route::post('/course-search', [CourseController::class, 'search']);
+        Route::post('/course-robust-search', [CourseController::class, 'robustSearch']);
+
         // Consultant
         Route::post('/submit-schools', [ConsultantController::class, 'submitSchools']);
         Route::post('/edit-schools', [ConsultantController::class, 'editSchools']);
