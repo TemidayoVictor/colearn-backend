@@ -185,6 +185,9 @@ Route::prefix('v1')->group(function () {
 
         Route::post('/update-general-settings', [AdminController::class, 'updateGeneralSettings']);
 
+        Route::post('/search-user', [AdminController::class, 'searchUser']);
+        Route::post('/search-course-admin', [AdminController::class, 'searchCourseAdmin']);
+
         // Blogs
         Route::post('/create-blog', [BlogController::class, 'createBlog']);
         Route::post('/edit-blog', [BlogController::class, 'editBlog']);

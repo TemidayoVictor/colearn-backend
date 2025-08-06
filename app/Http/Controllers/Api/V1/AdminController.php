@@ -760,4 +760,85 @@ class AdminController extends Controller
 
         return ResponseHelper::success("Withdrawal Declined Successfully");
     }
+
+    public function searchUser(Request $request) {
+        $validator = Validator::make($request->all(), [
+            'keyword' => 'required',
+        ]);
+
+        if ($validator->fails()) {
+            $firstError = $validator->errors()->first();
+            return ResponseHelper::error($firstError, $validator->errors(), 422);
+        }
+
+        $keyword = $request->input('keyword');
+
+        $users = User::where(function ($query) use ($keyword) {
+            $query->where('first_name', 'like', "%{$keyword}%")
+                  ->orWhere('last_name', 'like', "%{$keyword}%")
+                  ->orWhere('email', 'like', "%{$keyword}%");
+        })
+        ->get();
+
+        return ResponseHelper::success('Data fetched successfully.', ['users' => $users]);
+    }
+
+    public function searchCourseAdmin(Request $request) {
+        $validator = Validator::make($request->all(), [
+            'keyword' => 'required',
+        ]);
+
+        if ($validator->fails()) {
+            $firstError = $validator->errors()->first();
+            return ResponseHelper::error($firstError, $validator->errors(), 422);
+        }
+
+        $keyword = $request->input('keyword');
+
+        $totalSalesAmount = Cart::where('coupon_status', 'completed')->sum('purchase_price');
+        $totalCourses = Course::count();
+        $totalCoursesPublished = Course::where('is_published', true)->count();
+        $totalCompletedCourses = Enrollment::whereNotNull('completed_at')->count();
+        $totalEnrollments = Enrollment::count();
+        $totalReviews = Review::count();
+
+        $courses = Course::where(function ($query) use ($keyword) {
+            $query->where('title', 'like', "%{$keyword}%")
+                  ->orWhere('description', 'like', "%{$keyword}%");
+        })
+        ->withCount([
+            'enrollments as total_enrollments',
+            'enrollments as total_completions' => function ($query) {
+                $query->whereNotNull('completed_at');
+            },
+            'reviews as review_count',
+        ])
+        ->withSum('cart as total_revenue', 'purchase_price') // from carts
+        ->withAvg('reviews as average_rating', 'rating') // from reviews
+        ->with('instructor.user')
+        ->get();
+
+        $topInstructors = Instructor::with('courses', 'user')
+        ->withSum('totalSales as total_sales', 'purchase_price')
+        ->orderByDesc('total_sales')
+        ->take(6)
+        ->get();
+
+        $topCourses = Course::withCount('enrollments')
+        ->orderByDesc('enrollments_count')
+        ->take(6)
+        ->get();
+
+        return ResponseHelper::success("Data fetched successfully", [
+            'total_sales_amount' => $totalSalesAmount,
+            'total_courses_uploaded' => $totalCourses,
+            'total_courses_published' => $totalCoursesPublished,
+            'total_courses_completed' => $totalCompletedCourses,
+            'total_reviews' => $totalReviews,
+            'top_instructors' => $topInstructors,
+            'top_courses' => $topCourses,
+            'total_enrollments' => $totalEnrollments,
+            'courses' => $courses,
+        ]);
+    }
 }
