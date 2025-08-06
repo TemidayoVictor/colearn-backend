@@ -21,6 +21,7 @@ use App\Models\VideoProgress;
 use App\Models\Review;
 use App\Models\Category;
 use App\Models\Blog;
+use App\Models\InstructorReview;
 
 class UserController extends Controller
 {
@@ -332,5 +333,28 @@ class UserController extends Controller
             'reviews' => $reviews,
             'courses' => $courses,
         ]);
+    }
+
+    public function review(Request $request) {
+        $validator = Validator::make($request->all(), [
+            'user_id' => 'required|exists:users,id',
+            'instructor_id' => 'required|exists:instructors,id',
+            'title' => 'required',
+            'rating' => 'required|integer|min:1|max:5',
+            'review' => 'required|string|max:1000',
+        ]);
+
+        if ($validator->fails()) {
+            $firstError = $validator->errors()->first();
+            return ResponseHelper::error($firstError, $validator->errors(), 422);
+        }
+
+        // Update if already reviewed
+        $review = InstructorReview::updateOrCreate(
+            ['user_id' => $request->user_id, 'instructor_id' => $request->instructor_id],
+            ['rating' => $request->rating, 'review' => $request->review, 'title' => $request->title]
+        );
+
+        return ResponseHelper::success('Review submitted successfully.', ['review' => $review]);
     }
 }

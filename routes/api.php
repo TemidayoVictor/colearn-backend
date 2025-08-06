@@ -155,6 +155,8 @@ Route::prefix('v1')->group(function () {
         Route::post('/user-profile', [UserController::class, 'userProfile']);
         Route::post('/instructor-dashboard', [UserController::class, 'instructorDashboard']);
 
+        Route::post('/instructor-review', [UserController::class, 'review']);
+
         // Admin Routes
         Route::get('/admin-dashboard', [AdminController::class, 'adminDashboard']);
         Route::get('/admin-course', [AdminController::class, 'adminCourses']);
