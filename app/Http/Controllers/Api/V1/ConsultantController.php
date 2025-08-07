@@ -11,6 +11,8 @@ use Illuminate\Support\Facades\Storage;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Stripe\Stripe;
+use Stripe\Checkout\Session;
 
 use App\Models\User;
 use App\Models\Instructor;
@@ -723,7 +725,7 @@ class ConsultantController extends Controller
         return ResponseHelper::success('Session appproved successfully', ['booking' => $booking]);
     }
 
-    public function updatePaymentStatus(Request $request) {
+    public function stripeCheckout(Request $request) {
         $validator = Validator::make($request->all(), [
             'id' => 'required|exists:bookings,id',
         ]);
@@ -734,6 +736,61 @@ class ConsultantController extends Controller
         }
 
         $booking = Booking::where('id', $request->id)->with('consultant.instructor.user')->first();
+        $user = User::where('id', $booking->user_id)->first();
+
+        Stripe::setApiKey(config('services.stripe.secret'));
+
+        $session = Session::create([
+            'line_items' => [[
+                'price_data' => [
+                    'currency' => 'usd',
+                    'product_data' => [
+                        'name' => 'Colearn Consultation Session',
+                    ],
+                    'unit_amount' => round($booking->amount * 100), // $20.00 in cents
+                ],
+                'quantity' => 1,
+            ]],
+            'mode' => 'payment',
+            'success_url' => route('update.payment', [], true) . '?session_id={CHECKOUT_SESSION_ID}',
+            'cancel_url' => 'http://localhost:3000/students/bookings',
+            'customer_email' => $user->email,
+            'metadata' => [
+                'id' => $booking->id,
+            ]
+        ]);
+
+        if($session) {
+            return ResponseHelper::success('Checkout success', ['url' => $session->url]);
+        }
+
+        else {
+            return ResponseHelper::error('An error occured');
+        }
+    }
+
+    public function updatePaymentStatus(Request $request) {
+        // $validator = Validator::make($request->all(), [
+        //     'id' => 'required|exists:bookings,id',
+        // ]);
+
+        // if ($validator->fails()) {
+        //     $firstError = $validator->errors()->first();
+        //     return ResponseHelper::error($firstError, $validator->errors(), 422);
+        // }
+
+        $sessionId = $request->query('session_id');
+
+        if (!$sessionId) {
+            return ResponseHelper::error('No session ID provided');
+        }
+
+        Stripe::setApiKey(config('services.stripe.secret'));
+
+        $session = \Stripe\Checkout\Session::retrieve($sessionId);
+        $bookingId = $session->metadata->id;
+
+        $booking = Booking::where('id', $bookingId)->with('consultant.instructor.user')->first();
 
         // update admin wallet with the amount
         $adminWallet = Wallet::where('type', 'Admin')->first();
@@ -746,12 +803,11 @@ class ConsultantController extends Controller
         $adminReference = Str::uuid()->toString();
 
         // create transaction admin
-
         $adminTransaction = Transaction::create([
             'user_id' => $adminWallet->user_id,
             'wallet_id' => $adminWallet->id,
             'type' => 'credit',
-            'amount' => $adminEarning,
+            'amount' => $booking->amount,
             'reference' => 'adm-'.$adminReference,
             'description' => $message,
             'user_type' => 'Admin',
@@ -761,7 +817,7 @@ class ConsultantController extends Controller
             'payment_status' => 'paid',
         ]);
 
-        return ResponseHelper::success('Session updated successfully', ['booking' => $booking]);
+        return redirect()->to('http://localhost:3000/students/bookings?message=Payment Successful');
     }
 
     public function updateSessionStatus(Request $request) {

@@ -26,6 +26,9 @@ Route::prefix('v1')->group(function () {
     // Enroll
     Route::get('/enroll', [CourseController::class, 'enroll'])->name('enroll.student');
 
+    // Update Booking Payment
+    Route::get('/update-payment', [ConsultantController::class, 'updatePaymentStatus'])->name('update.payment');
+
     // authenticated routes
     Route::middleware('auth:sanctum')->group(function () {
         // Onboarding
@@ -145,8 +148,9 @@ Route::prefix('v1')->group(function () {
         Route::post('/reschedule-session-consultant', [ConsultantController::class, 'rescheduleSessionConsultant']);
         Route::post('/approve-reschedule', [ConsultantController::class, 'approveReschedule']);
 
-        Route::post('/update-payment', [ConsultantController::class, 'updatePaymentStatus']);
         Route::post('/update-session-status', [ConsultantController::class, 'updateSessionStatus']);
+
+        Route::post('/stripe-checkout-booking', [ConsultantController::class, 'stripeCheckout']);
 
         // Settings
         Route::post('/change-email', [SettingsController::class, 'changeEmail']);

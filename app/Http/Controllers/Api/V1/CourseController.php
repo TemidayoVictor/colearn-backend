@@ -1278,7 +1278,7 @@ class CourseController extends Controller
         ]);
 
         if($session) {
-            return ResponseHelper::success('Coupon created successfully', ['url' => $session->url]);
+            return ResponseHelper::success('Checkout success', ['url' => $session->url]);
         }
 
         else {
@@ -1399,7 +1399,7 @@ class CourseController extends Controller
 
         }
 
-        return redirect()->to('http://localhost:3000/students/courses?message=Course Enrollment successful');
+        return redirect()->to('http://localhost:3000/students/courses?message=Course Enrollment Successful');
 
     }
 
