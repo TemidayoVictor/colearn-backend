@@ -23,6 +23,9 @@ Route::prefix('v1')->group(function () {
 
     Route::post('/add-admin', [AdminController::class, 'addAdmin']);
 
+    // Enroll
+    Route::get('/enroll', [CourseController::class, 'enroll'])->name('enroll.student');
+
     // authenticated routes
     Route::middleware('auth:sanctum')->group(function () {
         // Onboarding
@@ -90,10 +93,13 @@ Route::prefix('v1')->group(function () {
 
         // Checkout
         Route::post('/checkout-calculate', [CourseController::class, 'checkoutCalculate']);
+        Route::post('/stripe-checkout', [CourseController::class, 'stripeCheckout']);
 
-        // Enroll
-        Route::post('/enroll', [CourseController::class, 'enroll']);
+        // Enrollments
         Route::post('/enrolled-courses', [CourseController::class, 'enrolledCourses']);
+
+        // Cancel Payment
+        Route::get('/cancel-payment', [CourseController::class, 'cancelPayment'])->name('cancel.payment');
 
         // Course progress
         Route::post('/watch-video', [CourseController::class, 'watchVideo']);

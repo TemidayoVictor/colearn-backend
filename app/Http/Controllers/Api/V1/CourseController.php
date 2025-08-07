@@ -11,6 +11,8 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Carbon\Carbon;
+use Stripe\Stripe;
+use Stripe\Checkout\Session;
 
 use App\Models\User;
 use App\Models\Course;
@@ -1203,10 +1205,11 @@ class CourseController extends Controller
         return ResponseHelper::success('Verification successful', ['total' => round($total, 2)]);
     }
 
-    public function enroll(Request $request) {
+    public function stripeCheckout(Request $request) {
         $validator = Validator::make($request->all(), [
             'id' => 'required|exists:users,id',
             'cart' => 'required|array',
+            'total' => 'required|numeric',
         ]);
 
         if ($validator->fails()) {
@@ -1214,19 +1217,106 @@ class CourseController extends Controller
             return ResponseHelper::error($firstError, $validator->errors(), 422);
         }
 
+        $user = User::where('id', $request->id)->first();
+        if (!$user) {
+            return ResponseHelper::error('User not found', [], 404);
+        }
+
+        $userEmail = $user->email;
         $allCart = $request->cart;
-        $userId = $request->id;
-        $total = 0;
-        $general = GeneralSetting::first();
-        $percentage = $general->course_percentage;
+
+        Stripe::setApiKey(config('services.stripe.secret'));
+
+        $lineItems = [];
 
         foreach ($allCart as $data) {
             $cartId = $data['id'];
 
-            // Fetch cart with course and coupon
-            $cart = Cart::where('id', $cartId)->with('course.instructor.user', 'coupon')->first();
+            // Fetch the full cart with course and coupon details
+            $cart = Cart::where('id', $cartId)
+                ->with('course.instructor.user', 'coupon')
+                ->first();
 
             if (!$cart || !$cart->course || $cart->user_id != $request->id) {
+                continue; // skip invalid or incomplete cart items
+            }
+
+            // Apply coupon if available
+            $price = $cart->course->price;
+            if ($cart->coupon) {
+                if ($cart->coupon->type === 'percentage') {
+                    $price = $price - ($price * ($cart->coupon->value / 100));
+                } else {
+                    $price = $price - $cart->coupon->value;
+                }
+
+                $price = max($price, 0); // prevent negative price
+            }
+
+            $lineItems[] = [
+                'price_data' => [
+                    'currency' => 'usd',
+                    'product_data' => [
+                        'name' => $cart->course->title,
+                    ],
+                    'unit_amount' => round($price * 100), // Stripe expects amount in cents
+                ],
+                'quantity' => $cart->quantity ?? 1, // default to 1 if quantity not set
+            ];
+        }
+
+        $session = Session::create([
+            'line_items' => $lineItems,
+            'mode' => 'payment',
+            'success_url' => route('enroll.student', [], true) . '?session_id={CHECKOUT_SESSION_ID}',
+            'cancel_url' => 'http://localhost:3000/students/cart',
+            'customer_email' => $userEmail,
+            'metadata' => [
+                'user_id' => $user->id,
+                'cart_ids' => implode(',', collect($allCart)->pluck('id')->toArray()),// Save cart in metadata
+            ]
+        ]);
+
+        if($session) {
+            return ResponseHelper::success('Coupon created successfully', ['url' => $session->url]);
+        }
+
+        else {
+            return ResponseHelper::error('An error occured');
+        }
+    }
+
+    public function enroll(Request $request) {
+        // $validator = Validator::make($request->all(), [
+        //     'id' => 'required|exists:users,id',
+        //     'cart' => 'required|array',
+        // ]);
+
+        // if ($validator->fails()) {
+        //     $firstError = $validator->errors()->first();
+        //     return ResponseHelper::error($firstError, $validator->errors(), 422);
+        // }
+
+        $sessionId = $request->query('session_id');
+
+        if (!$sessionId) {
+            return ResponseHelper::error('No session ID provided');
+        }
+
+        Stripe::setApiKey(config('services.stripe.secret'));
+
+        $session = \Stripe\Checkout\Session::retrieve($sessionId);
+        $allCart = explode(',', $session->metadata->cart_ids);
+        $userId = $session->metadata->user_id;
+
+        $total = 0;
+        $general = GeneralSetting::first();
+        $percentage = $general->course_percentage;
+
+        foreach ($allCart as $cartId) {
+            $cart = Cart::where('id', $cartId)->with('course.instructor.user', 'coupon')->first();
+
+            if (!$cart || !$cart->course || $cart->user_id != $userId) {
                 continue; // skip invalid or incomplete items
             }
 
@@ -1309,8 +1399,12 @@ class CourseController extends Controller
 
         }
 
-        return ResponseHelper::success('Course enrollment successful');
+        return redirect()->to('http://localhost:3000/students/courses?message=Course Enrollment successful');
 
+    }
+
+    public function cancelPayment(Request $request) {
+        return ResponseHelper::success('Payment cancelled successfully');
     }
 
     public function enrolledCourses(Request $request) {
