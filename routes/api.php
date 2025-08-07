@@ -205,6 +205,9 @@ Route::prefix('v1')->group(function () {
         Route::post('/edit-faq', [UtilitiesController::class, 'editFaq']);
         Route::post('/delete-faq', [UtilitiesController::class, 'deleteFaq']);
         Route::get('/get-all-faqs', [UtilitiesController::class, 'getFaqs']);
+
+        Route::post('/send-mail', [UtilitiesController::class, 'sendMail']);
+
     });
 
     // Utilities

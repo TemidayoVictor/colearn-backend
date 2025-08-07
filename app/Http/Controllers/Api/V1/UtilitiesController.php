@@ -7,6 +7,8 @@ use Illuminate\Http\Request;
 use App\Helpers\ResponseHelper;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
+use App\Mail\EmailVerification;
+use Illuminate\Support\Facades\Mail;
 
 use App\Models\Country;
 use App\Models\Category;
@@ -179,5 +181,10 @@ class UtilitiesController extends Controller
         $faq->delete();
 
         return ResponseHelper::success('Faq deleted successfully');
+    }
+
+    public function sendMail() {
+        Mail::to('temidayovictor1@gmail.com')->send(new EmailVerification);
+        return ResponseHelper::success('Email sent successfully');
     }
 }
