@@ -134,8 +134,6 @@ class CourseController extends Controller
             'summary' => 'required|string|max:500',
         ]);
 
-        Log::info($request);
-
         if ($validator->fails()) {
             $firstError = $validator->errors()->first();
             return ResponseHelper::error($firstError, $validator->errors(), 422);
@@ -193,6 +191,7 @@ class CourseController extends Controller
     }
 
     public function getCourse(Request $request) {
+        Log::info($request);
         $validator = Validator::make($request->all(), [
             'courseId' => 'required|exists:courses,id',
             'userId'   => 'required|exists:users,id',
@@ -648,7 +647,6 @@ class CourseController extends Controller
     }
 
     public function watchVideo(Request $request) {
-        Log::info($request);
         $validator = Validator::make($request->all(), [
             'userId' => 'required|exists:users,id',
             'videoId' => 'required|exists:course_videos,id',
