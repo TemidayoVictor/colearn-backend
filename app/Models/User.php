@@ -36,6 +36,7 @@ class User extends Authenticatable
         'status',
         'reason',
         'verification_status',
+        'bank_id',
     ];
 
     /**

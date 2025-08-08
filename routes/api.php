@@ -48,6 +48,8 @@ Route::prefix('v1')->group(function () {
         Route::post('/edit-experience', [OnboardingController::class, 'editExperience']);
         Route::post('/delete-experience', [OnboardingController::class, 'deleteExperience']);
 
+        Route::post('/update-bank', [OnboardingController::class, 'updateBank']);
+
         // Instructor Authenticated Route
 
         // Instructor Details

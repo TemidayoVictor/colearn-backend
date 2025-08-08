@@ -522,4 +522,22 @@ class OnboardingController extends Controller
         return ResponseHelper::success('Details fetched successfully', ['experiences' => $experiences]);
     }
 
+    public function updateBank(Request $request) {
+        $validator = Validator::make($request->all(), [
+            'user_id' => 'required|exists:users,id',
+            'bank_id' => 'required',
+        ]);
+
+        if ($validator->fails()) {
+            $firstError = $validator->errors()->first();
+            return ResponseHelper::error($firstError, $validator->errors(), 422);
+        }
+
+        $user = User::where('id', $request->user_id)->first();
+        $user->bank_id = $request->bank_id;
+        $user->save();
+
+        return ResponseHelper::success('Bank Details Updated');
+    }
+
 }
