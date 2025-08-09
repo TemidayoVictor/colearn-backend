@@ -234,7 +234,7 @@ class CourseController extends Controller
             return ResponseHelper::error($firstError, $validator->errors(), 422);
         }
 
-        $course = Course::with('reviews.user', 'enrollments')->where('id', $request->courseId)->first();
+        $course = Course::with('reviews.user', 'enrollments.user', 'resources')->where('id', $request->courseId)->first();
 
         return ResponseHelper::success('Data fetched successfully', ['course' => $course]);
     }
