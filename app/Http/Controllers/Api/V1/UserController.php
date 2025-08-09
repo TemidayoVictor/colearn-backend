@@ -357,4 +357,5 @@ class UserController extends Controller
 
         return ResponseHelper::success('Review submitted successfully.', ['review' => $review]);
     }
+
 }

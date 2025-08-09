@@ -13,6 +13,7 @@ use Illuminate\Support\Str;
 use Carbon\Carbon;
 use Stripe\Stripe;
 use Stripe\Checkout\Session;
+use Illuminate\Support\Facades\DB;
 
 use App\Models\User;
 use App\Models\Course;
@@ -1566,6 +1567,52 @@ class CourseController extends Controller
         return response()->json([
             'success' => true,
             'data' => $courses,
+        ]);
+    }
+
+    public function getCourseData(Request $request) {
+        $validator = Validator::make($request->all(), [
+            'courseId' => 'required|exists:courses,id',
+        ]);
+
+        if ($validator->fails()) {
+            $firstError = $validator->errors()->first();
+            return ResponseHelper::error($firstError, $validator->errors(), 422);
+        }
+
+        $courseId = $request->courseId;
+
+        // 1. Total Sales Amount
+        $totalSalesAmount = DB::table('cart')
+        ->where('course_id', $courseId)
+        ->where('status', 'checked_out')
+        ->sum('purchase_price');
+
+        // 2. Total Enrollments
+        $totalEnrollments = DB::table('enrollments')
+        ->where('course_id', $courseId)
+        ->count();
+
+        // 3. Total Courses Completed
+        $totalCompleted = DB::table('enrollments')
+        ->where('course_id', $courseId)
+        ->whereNotNull('completed_at')
+        ->count();
+
+        // 4. Total Courses Uploaded
+        $reviews = Review::where('course_id', $courseId)->get();
+        // Total number of reviews
+        $totalReviews = $reviews->count();
+
+        // Overall rating (average)
+        $overallRating = $totalReviews > 0 ? round($reviews->avg('rating'), 1) : 0;
+
+        return ResponseHelper::success("Data fetched successfully", [
+            'total_sales_amount' => $totalSalesAmount,
+            'total_enrollments' => $totalEnrollments,
+            'total_courses_completed' => $totalCompleted,
+            'total_reviews' => $totalReviews,
+            'total_average_rating' => $overallRating,
         ]);
     }
 
