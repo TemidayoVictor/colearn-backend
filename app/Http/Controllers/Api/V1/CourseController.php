@@ -438,6 +438,7 @@ class CourseController extends Controller
             'body' => 'nullable',
             'type' => 'required',
             'duration' => 'required',
+            'set_intro' => 'string'
         ]);
 
         if ($validator->fails()) {
@@ -487,6 +488,11 @@ class CourseController extends Controller
         $module->save();
 
         $course->videos_count = $courseVideos + 1;
+
+        // check if user marked video as introductory or this is the first video uploaded by the user for the course
+        if($request->set_intro != 'false' || !$courseVideos || $courseVideos == 0) {
+            $course->intro_video_url = $path;
+        }
         $course->save();
 
         // update the status of the module progress to incomplete
@@ -524,6 +530,7 @@ class CourseController extends Controller
             'videoId' => 'required|exists:course_videos,id',
             'body' => 'nullable',
             'type' => 'required',
+            'set_intro' => 'string',
         ]);
 
 
@@ -599,6 +606,15 @@ class CourseController extends Controller
         $video->type = $request->type;
         $video->body = $request->body;
         $video->save();
+
+        $module = CoursesSection::where('id', $request->moduleId)->first();
+        $courseId = $module->course_id;
+        $course = Course::where('id', $courseId)->first();
+
+        if($request->set_intro != 'false') {
+            $course->intro_video_url = $path;
+            $course->save();
+        }
 
         return ResponseHelper::success('Lecture Updated successfully', ['video' => $video]);
     }

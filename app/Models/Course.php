@@ -21,6 +21,7 @@ class Course extends Model
         'total_duration',
         'level',
         'summary',
+        'intro_video_url'
     ];
 
     public function instructor()

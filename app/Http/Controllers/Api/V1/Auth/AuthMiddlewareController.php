@@ -8,6 +8,7 @@ use App\Helpers\ResponseHelper;
 
 use App\Models\Instructor;
 use App\Models\Student;
+use App\Models\User;
 
 class AuthMiddlewareController extends Controller
 {
@@ -20,9 +21,9 @@ class AuthMiddlewareController extends Controller
         ];
 
         if ($user->type === 'student') {
-            $response['student'] = $user->student;
+            $response['student'] = Student::where('user_id', $user->id)->with('user')->first();
         } elseif ($user->type === 'instructor') {
-            $response['instructor'] = $user->instructor;
+            $response['instructor'] = Instructor::where('user_id', $user->id)->with('user')->first();
         }
 
         return response()->json($response);
