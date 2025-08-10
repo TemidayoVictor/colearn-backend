@@ -22,6 +22,7 @@ use App\Models\Review;
 use App\Models\Category;
 use App\Models\Blog;
 use App\Models\InstructorReview;
+use App\Models\Faq;
 
 class UserController extends Controller
 {
@@ -225,12 +226,14 @@ class UserController extends Controller
         $instructors = Instructor::whereNotNull('title')->with('user', 'courses.modules.videos')->inRandomOrder()->get(); // instructors who have completed their profile
         $consultants = Consultant::with('instructor.user')->inRandomOrder()->get();
         $blogs = Blog::all();
+        $faqs = Faq::all();
         return ResponseHelper::success("Data fetched successfully", [
             'categories' => $categories,
             'courses' => $courses,
             'instructors' => $instructors,
             'consultants' => $consultants,
-            'blogs' => $blogs
+            'blogs' => $blogs,
+            'faqs' => $faqs,
         ]);
     }
 
