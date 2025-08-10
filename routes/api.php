@@ -66,6 +66,7 @@ Route::prefix('v1')->group(function () {
         Route::post('/delete-course', [CourseController::class, 'deleteCourse']);
         Route::post('/get-course-student', [CourseController::class, 'getCourseStudent']);
         Route::post('/get-course-data', [CourseController::class, 'getCourseData']);
+        Route::post('/get-certificate', [CourseController::class, 'getCertificate']);
 
         // Modules
         Route::post('/upload-module', [CourseController::class, 'addModules']);
@@ -169,6 +170,7 @@ Route::prefix('v1')->group(function () {
         Route::post('/instructor-dashboard', [UserController::class, 'instructorDashboard']);
 
         Route::post('/instructor-review', [UserController::class, 'review']);
+        Route::post('/subscribe', [UserController::class, 'subscribe']);
 
         // Admin Routes
         Route::get('/admin-dashboard', [AdminController::class, 'adminDashboard']);
@@ -200,6 +202,8 @@ Route::prefix('v1')->group(function () {
 
         Route::post('/search-user', [AdminController::class, 'searchUser']);
         Route::post('/search-course-admin', [AdminController::class, 'searchCourseAdmin']);
+
+        Route::get('/subscribers', [AdminController::class, 'subscribers']);
 
         // Blogs
         Route::post('/create-blog', [BlogController::class, 'createBlog']);

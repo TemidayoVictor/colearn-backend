@@ -23,6 +23,7 @@ use App\Models\Category;
 use App\Models\Blog;
 use App\Models\InstructorReview;
 use App\Models\Faq;
+use App\Models\Subscriber;
 
 class UserController extends Controller
 {
@@ -359,6 +360,23 @@ class UserController extends Controller
         );
 
         return ResponseHelper::success('Review submitted successfully.', ['review' => $review]);
+    }
+
+    public function subscribe(Request $request) {
+        $validator = Validator::make($request->all(), [
+            'email' => 'required|unique:subscribers,id',
+        ]);
+
+        if ($validator->fails()) {
+            $firstError = $validator->errors()->first();
+            return ResponseHelper::error($firstError, $validator->errors(), 422);
+        }
+
+        $subscribe = Subscriber::create([
+            'email' => $request->email,
+        ]);
+
+        return ResponseHelper::success('You have subscribed successfully.', ['subscribe' => $subscribe]);
     }
 
 }

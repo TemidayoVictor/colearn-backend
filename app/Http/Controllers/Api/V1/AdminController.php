@@ -24,6 +24,7 @@ use App\Models\Course;
 use App\Models\Cart;
 use App\Models\Enrollment;
 use App\Models\Review;
+use App\Models\Subscriber;
 
 class AdminController extends Controller
 {
@@ -840,5 +841,10 @@ class AdminController extends Controller
             'total_enrollments' => $totalEnrollments,
             'courses' => $courses,
         ]);
+    }
+
+    public function subscribers() {
+        $subscribers = Subscriber::all();
+        return ResponseHelper::success('Data fetched successfully.', ['subscribers' => $subscribers]);
     }
 }

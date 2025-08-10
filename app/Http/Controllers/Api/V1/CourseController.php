@@ -1616,4 +1616,30 @@ class CourseController extends Controller
         ]);
     }
 
+    public function getCertificate(Request $request) {
+        $validator = Validator::make($request->all(), [
+            'userId' => 'required|exists:users,id',
+            'courseId' => 'required|exists:courses,id',
+        ]);
+
+        if ($validator->fails()) {
+            $firstError = $validator->errors()->first();
+            return ResponseHelper::error($firstError, $validator->errors(), 422);
+        }
+
+        $certificate = Enrollment::where('user_id', $request->userId)->where('course_id', $request->courseId)->with('user', 'course.instructor.user')->first();
+
+        if($certificate->completed_at == null) {
+            return ResponseHelper::error("Course not completed", ['certificate' => $certificate,]);
+        }
+
+        elseif($certificate) {
+            return ResponseHelper::success("Data fetched successfully", ['certificate' => $certificate]);
+        }
+
+        else {
+            return ResponseHelper::error("You are not enrolled for this course");
+        }
+    }
+
 }
