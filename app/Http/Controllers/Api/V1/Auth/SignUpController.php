@@ -10,6 +10,8 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
 use Stevebauman\Location\Facades\Location;
 use App\Helpers\TimeZoneHelper;
+use App\Mail\EmailVerification;
+use Illuminate\Support\Facades\Mail;
 
 use App\Models\User;
 use App\Models\Country;
@@ -69,6 +71,9 @@ class SignUpController extends Controller
         $languages = Language::all();
         $preferences = Preferences::all();
         $categories = Category::all();
+
+        // Send email verification
+        Mail::to($request->email)->send(new EmailVerification($emailVerificationCode));
 
         return ResponseHelper::success("Account created successfully",
         [

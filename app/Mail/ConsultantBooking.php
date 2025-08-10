@@ -9,16 +9,20 @@ use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
-class EmailVerification extends Mailable
+class ConsultantBooking extends Mailable
 {
     use Queueable, SerializesModels;
 
     /**
      * Create a new message instance.
      */
-    public function __construct($code)
+    public function __construct($booking, $username, $clientEmail, $consultantName)
     {
-        $this->code = $code;
+        //
+        $this->booking = $booking;
+        $this->username = $username;
+        $this->consultantName = $consultantName;
+        $this->clientEmail = $clientEmail;
     }
 
     /**
@@ -27,7 +31,7 @@ class EmailVerification extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Email Verification',
+            subject: 'New Booking Request',
         );
     }
 
@@ -37,9 +41,13 @@ class EmailVerification extends Mailable
     public function content(): Content
     {
         return new Content(
-            markdown: 'emails.email-verification',
+            markdown: 'emails.consultant-booking',
             with: [
-                'code' => $this->code,
+                'booking' => $this->booking,
+                'username' => $this->username,
+                'clientEmail' => $this->clientEmail,
+                'consultantName' => $this->consultantName,
+                'dashboardUrl' => 'www.colearn.com/instructors/dashboard',
             ],
         );
     }

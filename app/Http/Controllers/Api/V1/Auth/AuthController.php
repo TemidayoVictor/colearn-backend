@@ -12,6 +12,8 @@ use App\Helpers\TimeZoneHelper;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Hash;
+use App\Mail\ForgotPassword;
+use Illuminate\Support\Facades\Mail;
 
 use App\Models\User;
 use App\Models\Country;
@@ -97,6 +99,8 @@ class AuthController extends Controller
                 'created_at' => Carbon::now()
             ]
         );
+
+        Mail::to($email)->send(new ForgotPassword($code));
 
         return ResponseHelper::success("Otp Sent Successfully");
     }

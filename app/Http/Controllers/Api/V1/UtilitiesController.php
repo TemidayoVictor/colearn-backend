@@ -8,6 +8,8 @@ use App\Helpers\ResponseHelper;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use App\Mail\EmailVerification;
+use App\Mail\ConsultantBooking;
+use App\Mail\ForgotPassword;
 use Illuminate\Support\Facades\Mail;
 
 use App\Models\Country;

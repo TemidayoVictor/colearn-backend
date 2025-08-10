@@ -13,6 +13,8 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Stripe\Stripe;
 use Stripe\Checkout\Session;
+use App\Mail\ConsultantBooking;
+use Illuminate\Support\Facades\Mail;
 
 use App\Models\User;
 use App\Models\Instructor;
@@ -417,7 +419,7 @@ class ConsultantController extends Controller
             return ResponseHelper::error($firstError, $validator->errors(), 422);
         }
 
-        $consultant = Consultant::where('id', $request->consultantId)->first();
+        $consultant = Consultant::where('id', $request->consultantId)->with('instructor.user')->first();
         $user = User::where('id', $request->userId)->first();
 
         $start = Carbon::createFromFormat('Y-m-d g:i A', $request->date . ' ' . $request->start_time);
@@ -465,6 +467,12 @@ class ConsultantController extends Controller
             'user_end_time' => $userEnd->format('h:i A'),
             'consultant_date' => $request->consultant_date,
         ]);
+
+        $username = $user->first_name . ' ' . $user->last_name;
+        $clientEmail = $user->email;
+        $consultantName = $consultant->instructor->user->first_name;
+
+        Mail::to($consultant->instructor->user->email)->send(new ConsultantBooking($booking, $username, $clientEmail, $consultantName));
 
         return ResponseHelper::success('Session booked successfully', ['booking' => $booking]);
     }
