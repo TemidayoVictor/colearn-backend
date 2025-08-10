@@ -847,4 +847,9 @@ class AdminController extends Controller
         $subscribers = Subscriber::all();
         return ResponseHelper::success('Data fetched successfully.', ['subscribers' => $subscribers]);
     }
+
+    public function adminUsers() {
+        $users = User::where('type', 'admin')->get();
+        return ResponseHelper::success('Data fetched successfully.', ['users' => $users]);
+    }
 }

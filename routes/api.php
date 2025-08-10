@@ -205,6 +205,8 @@ Route::prefix('v1')->group(function () {
 
         Route::get('/subscribers', [AdminController::class, 'subscribers']);
 
+        Route::get('/admin-users', [AdminController::class, 'adminUsers']);
+
         // Blogs
         Route::post('/create-blog', [BlogController::class, 'createBlog']);
         Route::post('/edit-blog', [BlogController::class, 'editBlog']);

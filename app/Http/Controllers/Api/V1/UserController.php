@@ -364,7 +364,7 @@ class UserController extends Controller
 
     public function subscribe(Request $request) {
         $validator = Validator::make($request->all(), [
-            'email' => 'required|unique:subscribers,id',
+            'email' => 'required|unique:subscribers,email',
         ]);
 
         if ($validator->fails()) {
