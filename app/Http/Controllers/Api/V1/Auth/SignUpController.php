@@ -53,7 +53,6 @@ class SignUpController extends Controller
         }
 
         $user = User::create([
-            'name' => $request->firstName . ' ' . $request->lastName,
             'first_name' => $request->firstName,
             'last_name' => $request->lastName,
             'email' => $request->email,
