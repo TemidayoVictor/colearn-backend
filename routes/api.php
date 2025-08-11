@@ -116,7 +116,6 @@ Route::prefix('v1')->group(function () {
         Route::post('/review', [CourseController::class, 'review']);
 
         // Course search
-        Route::post('/course-search', [CourseController::class, 'search']);
         Route::post('/course-robust-search', [CourseController::class, 'robustSearch']);
 
         // Consultant

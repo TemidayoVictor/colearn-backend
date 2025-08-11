@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\V1\Auth\SignUpController;
 use App\Http\Controllers\Api\V1\Auth\AuthMiddlewareController;
 use App\Http\Controllers\Api\V1\Auth\AuthController;
 use App\Http\Controllers\Api\V1\UserController;
+use App\Http\Controllers\Api\V1\CourseController;
 
 Route::get('/', function () {
     return view('welcome');
@@ -21,6 +22,8 @@ Route::post('/login', [AuthController::class, 'login']);
 Route::get('/web-data', [UserController::class, 'webData']);
 
 Route::post('/instructor-data-web', [UserController::class, 'instructorDataWeb']);
+
+Route::post('/course-search', [CourseController::class, 'search']);
 
 Route::middleware('auth:sanctum')->group(function () {
     // authenticate user
