@@ -41,7 +41,7 @@ class AuthController extends Controller
         }
 
         // get and update the timezone based on the user's IP address
-        $ip = '102.89.39.111'; // or use a test IP like '102.89.39.111 $request->ip()'
+        $ip = $request->ip(); // or use a test IP like '102.89.39.111 $request->ip()'
         $position = Location::get($ip);
 
         if ($position && $position->countryCode) {

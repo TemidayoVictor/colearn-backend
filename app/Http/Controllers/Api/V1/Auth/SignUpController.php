@@ -44,7 +44,7 @@ class SignUpController extends Controller
 
         $emailVerificationCode = random_int(100000, 999999);
         // get and update the timezone based on the user's IP address
-        $ip = '102.89.39.111'; // or use a test IP like '102.89.39.111 $request->ip()'
+        $ip = $request->ip(); // or use a test IP like '102.89.39.111 $request->ip()'
         $position = Location::get($ip);
 
         $timezone = null;
@@ -53,6 +53,7 @@ class SignUpController extends Controller
         }
 
         $user = User::create([
+            'name' => $request->firstName . ' ' . $request->lastName,
             'first_name' => $request->firstName,
             'last_name' => $request->lastName,
             'email' => $request->email,

@@ -188,7 +188,7 @@ class AdminController extends Controller
             return ResponseHelper::error($firstError, $validator->errors(), 422);
         }
 
-        $ip = '102.89.39.111'; // or use a test IP like '102.89.39.111 $request->ip()'
+        $ip = $request->ip(); // or use a test IP like '102.89.39.111 $request->ip()'
         $position = Location::get($ip);
 
         $timezone = null;
