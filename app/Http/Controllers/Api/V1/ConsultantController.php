@@ -761,7 +761,7 @@ class ConsultantController extends Controller
             ]],
             'mode' => 'payment',
             'success_url' => route('update.payment', [], true) . '?session_id={CHECKOUT_SESSION_ID}',
-            'cancel_url' => 'http://localhost:3000/students/bookings',
+            'cancel_url' => 'https://www.colearnglobal.com/students/bookings',
             'customer_email' => $user->email,
             'metadata' => [
                 'id' => $booking->id,
@@ -825,7 +825,7 @@ class ConsultantController extends Controller
             'payment_status' => 'paid',
         ]);
 
-        return redirect()->to('http://localhost:3000/students/bookings?message=Payment Successful');
+        return redirect()->to('https://www.colearnglobal.com/students/bookings?message=Payment Successful');
     }
 
     public function updateSessionStatus(Request $request) {

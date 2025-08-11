@@ -1284,7 +1284,7 @@ class CourseController extends Controller
             'line_items' => $lineItems,
             'mode' => 'payment',
             'success_url' => route('enroll.student', [], true) . '?session_id={CHECKOUT_SESSION_ID}',
-            'cancel_url' => 'http://localhost:3000/students/cart',
+            'cancel_url' => 'https://www.colearnglobal.com/students/cart',
             'customer_email' => $userEmail,
             'metadata' => [
                 'user_id' => $user->id,
