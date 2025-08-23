@@ -107,6 +107,8 @@ class AdminController extends Controller
         ->take(6)
         ->get();
 
+        $totalUsers = User::where('type', '!=', 'Admin')->count();
+
         return ResponseHelper::success("Data fetched successfully", [
             'percentage_student_active' => $percentageStudentActive,
             'percentage_instructors_active' => $percentageInstructorsActive,
@@ -126,6 +128,7 @@ class AdminController extends Controller
             'total_revenue' => $totalRevenue,
             'users_by_country' => $usersByCountry,
             'top_courses' => $topCourses,
+            'total_users' => $totalUsers,
         ]);
 
     }
